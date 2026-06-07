@@ -118,13 +118,17 @@ fun AppNavigation() {
                 fadeIn(animationSpec = tween(250), initialAlpha = 0.0f) togetherWith
                 fadeOut(animationSpec = tween(200), targetAlpha = 0.0f)
             } else if (isForward) {
-                fadeIn(animationSpec = tween(350), initialAlpha = 0.0f) +
-                slideInVertically(initialOffsetY = { it / 10 }, animationSpec = tween(350)) togetherWith
-                fadeOut(animationSpec = tween(250), targetAlpha = 0.5f)
+                // 进入：从右侧滑入 + 淡入（快一点，减少等待感）
+                fadeIn(animationSpec = tween(200), initialAlpha = 0.0f) +
+                slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(280)) togetherWith
+                // 退出：轻微淡出，不做位移（减少GPU负担）
+                fadeOut(animationSpec = tween(200), targetAlpha = 0.4f)
             } else {
-                fadeIn(animationSpec = tween(350), initialAlpha = 0.0f) +
-                slideInVertically(initialOffsetY = { -it / 10 }, animationSpec = tween(350)) togetherWith
-                fadeOut(animationSpec = tween(250), targetAlpha = 0.5f)
+                // 返回：从左侧滑入 + 淡入
+                fadeIn(animationSpec = tween(200), initialAlpha = 0.0f) +
+                slideInHorizontally(initialOffsetX = { -it }, animationSpec = tween(280)) togetherWith
+                // 退出：轻微淡出
+                fadeOut(animationSpec = tween(200), targetAlpha = 0.4f)
             }
         },
         label = "screen_transition"

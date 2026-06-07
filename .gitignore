@@ -17,3 +17,5 @@ server/.env
 
 # OS
 Thumbs.db
+*.apk
+*.jks

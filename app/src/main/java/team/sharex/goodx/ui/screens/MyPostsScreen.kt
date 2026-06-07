@@ -78,12 +78,6 @@ fun MyPostsScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TextButton(
-                onClick = onBack,
-                colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)
-            ) {
-                Text("← 返回", fontSize = 14.sp)
-            }
             Text(
                 text = "我的发布",
                 color = TextPrimary,

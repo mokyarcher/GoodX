@@ -71,12 +71,6 @@ fun GoodItemDetailScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TextButton(
-                onClick = onBack,
-                colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)
-            ) {
-                Text("← 返回", fontSize = 14.sp)
-            }
             Text(
                 text = "好物详情",
                 color = TextPrimary,
