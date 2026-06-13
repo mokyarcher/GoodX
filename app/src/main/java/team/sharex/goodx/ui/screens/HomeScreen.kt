@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -97,11 +99,24 @@ fun HomeScreen(
         },
         containerColor = Background
     ) { padding ->
-        when (selectedTab) {
-            HomeTab.DISCOVER -> DiscoverTab(onGoodItemClick = onGoodItemClick, modifier = Modifier.padding(padding))
-            HomeTab.ALL -> AllCategoriesTab(onContentTypeClick = onContentTypeClick, modifier = Modifier.padding(padding))
-            HomeTab.CIRCLES -> CirclesTab(modifier = Modifier.padding(padding))
-            HomeTab.PROFILE -> ProfileTab(onLogout = onLogout, onMyPostsClick = onMyPostsClick, onPublishClick = onPublishClick, onEditProfileClick = onEditProfileClick, onAdminClick = onAdminClick, onNotificationsClick = onNotificationsClick, modifier = Modifier.padding(padding))
+        val tabs = HomeTab.values()
+        val pagerState = rememberPagerState(pageCount = { tabs.size }, initialPage = tabs.indexOf(selectedTab))
+
+        LaunchedEffect(selectedTab) {
+            val idx = tabs.indexOf(selectedTab)
+            if (idx != pagerState.currentPage) pagerState.animateScrollToPage(idx)
+        }
+        LaunchedEffect(pagerState.currentPage) {
+            selectedTab = tabs[pagerState.currentPage]
+        }
+
+        HorizontalPager(state = pagerState, modifier = Modifier.padding(padding)) { page ->
+            when (tabs[page]) {
+                HomeTab.DISCOVER -> DiscoverTab(onGoodItemClick = onGoodItemClick, modifier = Modifier.fillMaxSize())
+                HomeTab.ALL -> AllCategoriesTab(onContentTypeClick = onContentTypeClick, modifier = Modifier.fillMaxSize())
+                HomeTab.CIRCLES -> CirclesTab(modifier = Modifier.fillMaxSize())
+                HomeTab.PROFILE -> ProfileTab(onLogout = onLogout, onMyPostsClick = onMyPostsClick, onPublishClick = onPublishClick, onEditProfileClick = onEditProfileClick, onAdminClick = onAdminClick, onNotificationsClick = onNotificationsClick, modifier = Modifier.fillMaxSize())
+            }
         }
     }
 }
