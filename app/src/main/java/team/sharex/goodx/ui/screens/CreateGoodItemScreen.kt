@@ -27,6 +27,8 @@ import team.sharex.goodx.data.remote.CreateGoodItemRequest
 import team.sharex.goodx.data.remote.RetrofitClient
 import team.sharex.goodx.data.remote.errorMessage
 import team.sharex.goodx.model.Category
+import team.sharex.goodx.model.ContentType
+import team.sharex.goodx.model.categories
 import team.sharex.goodx.model.displayName
 import team.sharex.goodx.model.iconEmoji
 import team.sharex.goodx.ui.theme.Accent
@@ -38,6 +40,30 @@ import java.io.File
 
 val Platforms = listOf("京东", "淘宝", "拼多多", "抖音", "其他")
 
+private fun ContentType.titlePlaceholder(): String = when (this) {
+    ContentType.GOODS -> "填写好物名称"
+    ContentType.MOMENTS -> "这一刻是什么？"
+    ContentType.ENTERTAINMENT -> "这部作品叫什么？"
+}
+
+private fun ContentType.contentPlaceholder(): String = when (this) {
+    ContentType.GOODS -> "添加正文：购买理由、优缺点、使用体验..."
+    ContentType.MOMENTS -> "记录一下当时看到/感受到的东西..."
+    ContentType.ENTERTAINMENT -> "为什么值得看/听/读/玩？"
+}
+
+private fun ContentType.extraLabel(): String = when (this) {
+    ContentType.GOODS -> "品牌 / 平台 / 场景"
+    ContentType.MOMENTS -> "地点 / 场景"
+    ContentType.ENTERTAINMENT -> "作者 / 平台 / 状态"
+}
+
+private fun ContentType.extraPlaceholder(): String = when (this) {
+    ContentType.GOODS -> "选择或填写品牌 / 平台 / 场景"
+    ContentType.MOMENTS -> "填写地点 / 场景"
+    ContentType.ENTERTAINMENT -> "填写作者 / 平台 / 状态"
+}
+
 @Composable
 fun CreateGoodItemScreen(
     onBack: () -> Unit,
@@ -46,6 +72,7 @@ fun CreateGoodItemScreen(
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
     var platform by remember { mutableStateOf("") }
+    var selectedContentType by remember { mutableStateOf(ContentType.GOODS) }
     var selectedCategory by remember { mutableStateOf(Category.ELECTRONICS) }
     var categoryExpanded by remember { mutableStateOf(false) }
     var platformExpanded by remember { mutableStateOf(false) }
@@ -56,6 +83,12 @@ fun CreateGoodItemScreen(
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
+    val availableCategories = selectedContentType.categories()
+
+    LaunchedEffect(selectedContentType) {
+        selectedCategory = availableCategories.first()
+        platform = ""
+    }
 
     // 多图选择器
     val imagePicker = rememberLauncherForActivityResult(
@@ -114,7 +147,7 @@ fun CreateGoodItemScreen(
                 Text("取消", fontSize = 14.sp)
             }
             Text(
-                text = "发布好物",
+                text = "发布${selectedContentType.displayName()}",
                 color = TextPrimary,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
@@ -122,7 +155,7 @@ fun CreateGoodItemScreen(
             Button(
                 onClick = {
                     if (title.isBlank()) {
-                        error = "请填写好物名称"
+                        error = "请填写${selectedContentType.displayName()}标题"
                         return@Button
                     }
                     scope.launch {
@@ -133,6 +166,7 @@ fun CreateGoodItemScreen(
                                 CreateGoodItemRequest(
                                     title = title,
                                     description = content,
+                                    contentType = selectedContentType.name,
                                     category = selectedCategory.name,
                                     subCategory = platform.takeIf { it.isNotBlank() },
                                     images = uploadedImageUrls
@@ -242,11 +276,18 @@ fun CreateGoodItemScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            ContentTypeSelector(
+                selectedType = selectedContentType,
+                onTypeSelected = { selectedContentType = it }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // 标题输入
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it; error = null },
-                placeholder = { Text("填写好物名称", color = TextSecondary.copy(alpha = 0.5f)) },
+                placeholder = { Text(selectedContentType.titlePlaceholder(), color = TextSecondary.copy(alpha = 0.5f)) },
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Accent,
@@ -265,7 +306,7 @@ fun CreateGoodItemScreen(
             OutlinedTextField(
                 value = content,
                 onValueChange = { content = it },
-                placeholder = { Text("添加正文：购买理由、优缺点、使用体验...", color = TextSecondary.copy(alpha = 0.5f)) },
+                placeholder = { Text(selectedContentType.contentPlaceholder(), color = TextSecondary.copy(alpha = 0.5f)) },
                 minLines = 6,
                 maxLines = 12,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -281,17 +322,35 @@ fun CreateGoodItemScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 平台选择
+            // 补充词条
             Text(
-                text = "购买平台",
+                text = selectedContentType.extraLabel(),
                 color = TextSecondary,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            PlatformSelector(
-                selectedPlatform = platform,
-                onPlatformSelected = { platform = it }
-            )
+            if (selectedContentType == ContentType.GOODS) {
+                PlatformSelector(
+                    selectedPlatform = platform,
+                    onPlatformSelected = { platform = it }
+                )
+            } else {
+                OutlinedTextField(
+                    value = platform,
+                    onValueChange = { platform = it },
+                    placeholder = { Text(selectedContentType.extraPlaceholder(), color = TextSecondary.copy(alpha = 0.5f)) },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Accent,
+                        unfocusedBorderColor = androidx.compose.ui.graphics.Color.Transparent,
+                        focusedTextColor = TextPrimary,
+                        unfocusedTextColor = TextPrimary,
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -316,7 +375,7 @@ fun CreateGoodItemScreen(
                     onDismissRequest = { categoryExpanded = false },
                     modifier = Modifier.background(Surface)
                 ) {
-                    Category.values().forEach { cat ->
+                    availableCategories.forEach { cat ->
                         DropdownMenuItem(
                             text = { Text("${cat.iconEmoji()} ${cat.displayName()}", color = TextPrimary) },
                             onClick = {
@@ -326,6 +385,42 @@ fun CreateGoodItemScreen(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun ContentTypeSelector(
+    selectedType: ContentType,
+    onTypeSelected: (ContentType) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Surface, RoundedCornerShape(14.dp))
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        ContentType.values().forEach { type ->
+            val selected = selectedType == type
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(42.dp)
+                    .background(
+                        if (selected) Accent.copy(alpha = 0.16f) else androidx.compose.ui.graphics.Color.Transparent,
+                        RoundedCornerShape(10.dp)
+                    )
+                    .clickable { onTypeSelected(type) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = type.displayName(),
+                    color = if (selected) Accent else TextSecondary,
+                    fontSize = 14.sp,
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                )
             }
         }
     }

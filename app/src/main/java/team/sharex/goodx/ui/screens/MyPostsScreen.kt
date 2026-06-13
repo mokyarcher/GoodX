@@ -14,31 +14,50 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.request.ImageRequest
+import coil.size.Scale
 import kotlinx.coroutines.launch
 import team.sharex.goodx.data.remote.RetrofitClient
 import team.sharex.goodx.data.remote.TokenManager
 import team.sharex.goodx.data.remote.UpdateGoodItemRequest
 import team.sharex.goodx.data.remote.errorMessage
 import team.sharex.goodx.model.Category
+import team.sharex.goodx.model.ContentType
 import team.sharex.goodx.model.GoodItem
+import team.sharex.goodx.model.categories
 import team.sharex.goodx.model.displayName
 import team.sharex.goodx.model.iconEmoji
 import team.sharex.goodx.ui.theme.Accent
 import team.sharex.goodx.ui.theme.Background
+import team.sharex.goodx.ui.theme.LikeRed
 import team.sharex.goodx.ui.theme.Surface
 import team.sharex.goodx.ui.theme.TextPrimary
 import team.sharex.goodx.ui.theme.TextSecondary
 
+private const val GOODX_BASE_URL = "http://124.223.50.79:3002"
+
+private fun originalImageUrl(path: String): String =
+    if (path.startsWith("http")) path else "$GOODX_BASE_URL$path"
+
+private fun thumbnailImageUrl(path: String): String {
+    if (path.startsWith("http")) return path
+    val filename = path.substringAfterLast('/')
+    return "$GOODX_BASE_URL/api/upload/thumb/$filename"
+}
+
 @Composable
 fun MyPostsScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onEditItem: (String) -> Unit = {},
+    initialShowRemoved: Boolean = false
 ) {
     BackHandler { onBack() }
 
     var myItems by remember { mutableStateOf<List<GoodItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
-    var showEditDialog by remember { mutableStateOf<GoodItem?>(null) }
+    var showRemoved by remember { mutableStateOf(initialShowRemoved) }
     var showDeleteConfirm by remember { mutableStateOf<GoodItem?>(null) }
+    var showSubmitConfirm by remember { mutableStateOf<GoodItem?>(null) }
     var refreshTrigger by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -51,7 +70,8 @@ fun MyPostsScreen(
                 val userId = meResponse.body()?.id
                 val response = RetrofitClient.apiService.getGoodItems(
                     author = userId,
-                    sort = "newest"
+                    sort = "newest",
+                    status = if (showRemoved) "removed" else null
                 )
                 if (response.isSuccessful) {
                     myItems = response.body() ?: emptyList()
@@ -63,7 +83,7 @@ fun MyPostsScreen(
         }
     }
 
-    LaunchedEffect(refreshTrigger) { loadMyItems() }
+    LaunchedEffect(refreshTrigger, showRemoved) { loadMyItems() }
 
     Column(
         modifier = Modifier
@@ -74,7 +94,7 @@ fun MyPostsScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 12.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -85,6 +105,33 @@ fun MyPostsScreen(
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.width(48.dp))
+        }
+
+        // Tab 切换
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            FilterChip(
+                selected = !showRemoved,
+                onClick = { showRemoved = false },
+                label = { Text("已发布", fontSize = 15.sp) },
+                modifier = Modifier.height(40.dp),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Accent.copy(alpha = 0.15f),
+                    selectedLabelColor = Accent
+                )
+            )
+            FilterChip(
+                selected = showRemoved,
+                onClick = { showRemoved = true },
+                label = { Text("已下架", fontSize = 15.sp) },
+                modifier = Modifier.height(40.dp),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Accent.copy(alpha = 0.15f),
+                    selectedLabelColor = Accent
+                )
+            )
         }
 
         if (isLoading) {
@@ -113,23 +160,50 @@ fun MyPostsScreen(
                 items(myItems) { item ->
                     MyPostItemCard(
                         item = item,
-                        onEdit = { showEditDialog = item },
-                        onDelete = { showDeleteConfirm = item }
+                        onEdit = {
+                            cacheGoodItemPreview(item)
+                            onEditItem(item.id)
+                        },
+                        onDelete = { showDeleteConfirm = item },
+                        onSubmitReview = {
+                            showSubmitConfirm = item
+                        }
                     )
                 }
             }
         }
     }
 
-    // 编辑对话框
-    showEditDialog?.let { item ->
-        EditGoodItemDialog(
-            item = item,
-            onDismiss = { showEditDialog = null },
-            onUpdated = {
-                showEditDialog = null
-                refreshTrigger++
-                android.widget.Toast.makeText(context, "✓ 修改成功！", android.widget.Toast.LENGTH_SHORT).show()
+    // 提交审核确认
+    showSubmitConfirm?.let { item ->
+        AlertDialog(
+            onDismissRequest = { showSubmitConfirm = null },
+            containerColor = Surface,
+            title = { Text("提交审核", color = TextPrimary, fontWeight = FontWeight.Bold) },
+            text = { Text("确定要将「${item.title}」提交管理员审核吗？\n\n提交后帖子将进入审核状态，审核通过后会自动重新上架。", color = TextSecondary, fontSize = 14.sp) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSubmitConfirm = null
+                        scope.launch {
+                            try {
+                                val resp = RetrofitClient.apiService.submitForReview(item.id)
+                                if (resp.isSuccessful) {
+                                    refreshTrigger++
+                                    android.widget.Toast.makeText(context, "已提交审核", android.widget.Toast.LENGTH_SHORT).show()
+                                } else {
+                                    android.widget.Toast.makeText(context, resp.errorMessage(), android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            } catch (_: Exception) { }
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Accent)
+                ) { Text("确认提交") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSubmitConfirm = null }, colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)) {
+                    Text("取消")
+                }
             }
         )
     }
@@ -179,7 +253,8 @@ fun MyPostsScreen(
 fun MyPostItemCard(
     item: GoodItem,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onSubmitReview: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -195,9 +270,25 @@ fun MyPostItemCard(
                 .background(TextSecondary.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center
         ) {
-            if (item.images.isNotEmpty()) {
+            if (!item.images.isNullOrEmpty()) {
+                val imagePath = item.images.first()
+                var useOriginalImage by remember(imagePath) { mutableStateOf(false) }
+                val imageUrl = if (useOriginalImage) originalImageUrl(imagePath) else thumbnailImageUrl(imagePath)
+
                 coil.compose.AsyncImage(
-                    model = "http://124.223.50.79:3002${item.images.first()}",
+                    model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                        .data(imageUrl)
+                        .crossfade(120)
+                        .size(240, 240)
+                        .scale(Scale.FILL)
+                        .memoryCacheKey(if (useOriginalImage) "original:${imagePath}" else "thumb:${imagePath}")
+                        .diskCacheKey(if (useOriginalImage) "original:${imagePath}" else "thumb:${imagePath}")
+                        .listener(
+                            onError = { _, _ ->
+                                if (!useOriginalImage) useOriginalImage = true
+                            }
+                        )
+                        .build(),
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
@@ -211,13 +302,28 @@ fun MyPostItemCard(
 
         // 信息
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.title,
-                color = TextPrimary,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = item.title,
+                    color = TextPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                when (item.status) {
+                    "removed" -> Text(" ⚠️", fontSize = 12.sp)
+                    "pending_review" -> Text(" ⏳", fontSize = 12.sp)
+                }
+            }
+            // 下架理由
+            item.removeReason?.takeIf { it.isNotBlank() }?.let {
+                Text("理由：$it", color = LikeRed.copy(alpha = 0.7f), fontSize = 10.sp, modifier = Modifier.padding(top = 2.dp))
+            }
+            // 审核中
+            if (item.status == "pending_review") {
+                Text("审核中...", color = Accent, fontSize = 10.sp, modifier = Modifier.padding(top = 2.dp))
+            }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
                 Text(
                     text = item.category.displayName(),
@@ -247,12 +353,27 @@ fun MyPostItemCard(
 
         // 操作按钮
         Column {
-            TextButton(
-                onClick = onEdit,
-                colors = ButtonDefaults.textButtonColors(contentColor = TextPrimary),
-                modifier = Modifier.height(32.dp)
-            ) {
-                Text("编辑", fontSize = 12.sp)
+            // 编辑（审核中不可编辑）
+            if (item.status == "pending_review") {
+                Text("审核中，无法编辑", color = TextSecondary.copy(alpha = 0.5f), fontSize = 11.sp)
+            } else {
+                TextButton(
+                    onClick = onEdit,
+                    colors = ButtonDefaults.textButtonColors(contentColor = TextPrimary),
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Text("编辑", fontSize = 12.sp)
+                }
+            }
+            // 提交审核（仅已下架）
+            if (item.status == "removed") {
+                TextButton(
+                    onClick = onSubmitReview,
+                    colors = ButtonDefaults.textButtonColors(contentColor = Accent),
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Text("提交审核", fontSize = 12.sp)
+                }
             }
             TextButton(
                 onClick = onDelete,
@@ -265,151 +386,3 @@ fun MyPostItemCard(
     }
 }
 
-@Composable
-fun EditGoodItemDialog(
-    item: GoodItem,
-    onDismiss: () -> Unit,
-    onUpdated: () -> Unit
-) {
-    var title by remember { mutableStateOf(item.title) }
-    var description by remember { mutableStateOf(item.description ?: "") }
-    var platform by remember { mutableStateOf(item.subCategory ?: "") }
-    var selectedCategory by remember { mutableStateOf(item.category) }
-    var expanded by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-    val context = androidx.compose.ui.platform.LocalContext.current
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = Surface,
-        title = { Text("编辑好物", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold) },
-        text = {
-            Column {
-                // 品类选择
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
-                        onClick = { expanded = true },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-                        shape = RoundedCornerShape(0.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("${selectedCategory.iconEmoji()} ${selectedCategory.displayName()}")
-                    }
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false },
-                        modifier = Modifier.background(Surface)
-                    ) {
-                        Category.values().forEach { cat ->
-                            DropdownMenuItem(
-                                text = { Text("${cat.iconEmoji()} ${cat.displayName()}", color = TextPrimary) },
-                                onClick = {
-                                    selectedCategory = cat
-                                    expanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it; error = null },
-                    label = { Text("标题", color = TextSecondary) },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Accent,
-                        unfocusedBorderColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.1f),
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("描述", color = TextSecondary) },
-                    maxLines = 3,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Accent,
-                        unfocusedBorderColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.1f),
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = platform,
-                    onValueChange = { platform = it },
-                    label = { Text("平台/品牌", color = TextSecondary) },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Accent,
-                        unfocusedBorderColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.1f),
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                if (error != null) {
-                    Text(error!!, color = Accent, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (title.isBlank()) {
-                        error = "请输入标题"
-                        return@Button
-                    }
-                    scope.launch {
-                        isLoading = true
-                        error = null
-                        try {
-                            val response = RetrofitClient.apiService.updateGoodItem(
-                                id = item.id,
-                                request = UpdateGoodItemRequest(
-                                    title = title,
-                                    description = description,
-                                    category = selectedCategory.name,
-                                    subCategory = platform.takeIf { it.isNotBlank() }
-                                )
-                            )
-                            if (response.isSuccessful) {
-                                android.widget.Toast.makeText(context, "✓ 修改成功！", android.widget.Toast.LENGTH_SHORT).show()
-                                onUpdated()
-                                return@launch
-                            } else {
-                                error = "修改失败: ${response.errorMessage()}"
-                            }
-                        } catch (e: Exception) {
-                            error = "网络错误: ${e.message}"
-                        }
-                        isLoading = false
-                    }
-                },
-                enabled = !isLoading,
-                colors = ButtonDefaults.buttonColors(containerColor = Accent),
-                shape = RoundedCornerShape(0.dp)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(color = TextPrimary, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                } else {
-                    Text("保存")
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)) {
-                Text("取消")
-            }
-        }
-    )
-}

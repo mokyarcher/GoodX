@@ -23,6 +23,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  isAdmin: {
+    type: Boolean,
+    default: false
+  },
+  banned: {
+    type: Boolean,
+    default: false
+  },
   inviteCode: {
     type: String,
     unique: true,

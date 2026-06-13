@@ -1,23 +1,47 @@
 package team.sharex.goodx.ui.screens
 
+import android.content.ContentValues
+import android.content.Context
+import android.media.MediaScannerConnection
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.imageLoader
+import coil.request.ImageRequest
+import coil.size.Scale
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.File
+import java.net.URL
 import team.sharex.goodx.data.remote.CommentRequest
 import team.sharex.goodx.data.remote.RetrofitClient
 import team.sharex.goodx.data.remote.errorMessage
@@ -26,17 +50,51 @@ import team.sharex.goodx.model.GoodItem
 import team.sharex.goodx.model.displayName
 import team.sharex.goodx.ui.theme.Accent
 import team.sharex.goodx.ui.theme.Background
+import team.sharex.goodx.ui.theme.LikeRed
 import team.sharex.goodx.ui.theme.Surface
 import team.sharex.goodx.ui.theme.TextPrimary
 import team.sharex.goodx.ui.theme.TextSecondary
+
+private const val GOODX_BASE_URL = "http://124.223.50.79:3002"
+private val viewedOriginalImages = mutableStateSetOf<String>()
+private val goodItemPreviewCache = mutableStateMapOf<String, GoodItem>()
+
+fun cacheGoodItemPreview(item: GoodItem) {
+    goodItemPreviewCache[item.id] = item
+}
+
+private fun originalImageUrl(path: String): String =
+    if (path.startsWith("http")) path else "$GOODX_BASE_URL$path"
+
+private fun thumbnailImageUrl(path: String): String {
+    if (path.startsWith("http")) return path
+    val filename = path.substringAfterLast('/')
+    return "$GOODX_BASE_URL/api/upload/thumb/$filename"
+}
+
+private fun previewImageUrl(path: String): String {
+    if (path.startsWith("http")) return path
+    val filename = path.substringAfterLast('/')
+    return "$GOODX_BASE_URL/api/upload/preview/$filename"
+}
+
+private fun preloadOriginalImage(context: Context, imagePath: String) {
+    if (imagePath.isBlank()) return
+    val request = ImageRequest.Builder(context)
+        .data(originalImageUrl(imagePath))
+        .memoryCacheKey("viewer-original:$imagePath")
+        .diskCacheKey("viewer-original:$imagePath")
+        .build()
+    context.imageLoader.enqueue(request)
+}
 
 @Composable
 fun GoodItemDetailScreen(
     itemId: String,
     onBack: () -> Unit
 ) {
-    var item by remember { mutableStateOf<GoodItem?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
+    var item by remember(itemId) { mutableStateOf(goodItemPreviewCache[itemId]) }
+    var isLoading by remember(itemId) { mutableStateOf(item == null) }
     var commentText by remember { mutableStateOf("") }
     var isSending by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -47,7 +105,10 @@ fun GoodItemDetailScreen(
             try {
                 val response = RetrofitClient.apiService.getGoodItemDetail(itemId)
                 if (response.isSuccessful) {
-                    item = response.body()
+                    response.body()?.let { detail ->
+                        goodItemPreviewCache[itemId] = detail
+                        item = detail
+                    }
                 }
             } catch (e: Exception) {
                 // ignore
@@ -63,22 +124,6 @@ fun GoodItemDetailScreen(
             .fillMaxSize()
             .background(Background)
     ) {
-        // Top Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "好物详情",
-                color = TextPrimary,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.width(48.dp))
-        }
 
         if (isLoading) {
             Box(
@@ -97,14 +142,23 @@ fun GoodItemDetailScreen(
         } else {
             val goodItem = item!!
             
+            // Top Bar
+            Text(
+                text = "详情",
+                color = TextPrimary,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 16.dp, top = 48.dp, bottom = 12.dp)
+            )
+
             LazyColumn(
                 modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // 图片轮播
                 item {
-                    if (goodItem.images.isNotEmpty()) {
+                    if (!goodItem.images.isNullOrEmpty()) {
                         ImageCarousel(images = goodItem.images)
                     } else {
                         Box(
@@ -129,7 +183,7 @@ fun GoodItemDetailScreen(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = goodItem.category.displayName(),
+                                    text = "${goodItem.contentType.displayName()} · ${goodItem.category.displayName()}",
                                     color = Accent,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium
@@ -153,6 +207,54 @@ fun GoodItemDetailScreen(
                                 fontSize = 12.sp
                             )
                         }
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // 发布者
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val authorAvatar = goodItem.author?.avatar
+                            Box(
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                    .background(TextSecondary.copy(alpha = 0.12f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (!authorAvatar.isNullOrBlank()) {
+                                    val avatarThumbUrl = if (authorAvatar.startsWith("http")) authorAvatar
+                                        else "$GOODX_BASE_URL/api/upload/thumb/${authorAvatar.substringAfterLast('/')}"
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(avatarThumbUrl)
+                                            .size(72, 72)
+                                            .scale(Scale.FIT)
+                                            .crossfade(80)
+                                            .memoryCacheKey("avatar-thumb:$authorAvatar")
+                                            .diskCacheKey("avatar-thumb:$authorAvatar")
+                                            .build(),
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                    )
+                                } else {
+                                    Text(
+                                        text = (goodItem.author?.nickname ?: goodItem.author?.username ?: "?").first().uppercase(),
+                                        color = Accent,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = goodItem.author?.nickname ?: goodItem.author?.username ?: "匿名",
+                                color = TextSecondary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = goodItem.title,
@@ -200,7 +302,8 @@ fun GoodItemDetailScreen(
                     )
                 }
 
-                if (goodItem.comments.isEmpty()) {
+                val comments = goodItem.comments.orEmpty()
+                if (comments.isEmpty()) {
                     item {
                         Text(
                             text = "暂无评论，来说两句吧",
@@ -210,8 +313,18 @@ fun GoodItemDetailScreen(
                         )
                     }
                 } else {
-                    items(goodItem.comments) { comment ->
-                        CommentItem(comment = comment)
+                    items(comments) { comment ->
+                        CommentItem(
+                            comment = comment,
+                            onLike = {
+                                scope.launch {
+                                    try {
+                                        val r = RetrofitClient.apiService.likeComment(goodItem.id, comment.id ?: "")
+                                        if (r.isSuccessful) item = r.body()
+                                    } catch (_: Exception) { }
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -227,7 +340,7 @@ fun GoodItemDetailScreen(
                 OutlinedTextField(
                     value = commentText,
                     onValueChange = { commentText = it },
-                    placeholder = { Text("写评论...", color = TextSecondary) },
+                    placeholder = { Text("写评论...", color = TextSecondary, fontSize = 13.sp) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Accent,
@@ -235,7 +348,9 @@ fun GoodItemDetailScreen(
                         focusedTextColor = TextPrimary,
                         unfocusedTextColor = TextPrimary
                     ),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .defaultMinSize(minHeight = 44.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
@@ -260,7 +375,8 @@ fun GoodItemDetailScreen(
                     },
                     enabled = !isSending && commentText.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(containerColor = Accent),
-                    shape = RoundedCornerShape(0.dp)
+                    shape = RoundedCornerShape(0.dp),
+                    modifier = Modifier.height(44.dp)
                 ) {
                     if (isSending) {
                         CircularProgressIndicator(color = TextPrimary, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
@@ -276,43 +392,72 @@ fun GoodItemDetailScreen(
 @Composable
 fun ImageCarousel(images: List<String>) {
     var selectedIndex by remember { mutableStateOf(0) }
-    
+    var viewerVisible by remember { mutableStateOf(false) }
+    var originalLoaded by remember(images) { mutableStateOf(images.filter { it in viewedOriginalImages }.toSet()) }
+    val context = LocalContext.current
+
+    LaunchedEffect(images, selectedIndex) {
+        images.getOrNull(selectedIndex)?.let { preloadOriginalImage(context, it) }
+    }
+
+    val pagerState = rememberPagerState(pageCount = { images.size })
+
     Column {
-        // 主图显示区
-        Box(
+        // 主图显示区：支持左右滑动切图
+        HorizontalPager(
+            state = pagerState,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(280.dp)
-                .background(TextSecondary.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center
-        ) {
-            if (images.isNotEmpty()) {
-                AsyncImage(
-                    model = "http://124.223.50.79:3002${images[selectedIndex]}",
-                    contentDescription = null,
+                .clip(RoundedCornerShape(14.dp))
+                .background(TextSecondary.copy(alpha = 0.1f))
+                .clickable { viewerVisible = true }
+        ) { page ->
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                DetailCompressedImage(
+                    imagePath = images[page],
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    size = 1280,
+                    usePreview = true
                 )
             }
-            
-            // 图片计数器
-            if (images.size > 1) {
+        }
+
+        LaunchedEffect(pagerState.currentPage) {
+            selectedIndex = pagerState.currentPage
+        }
+        LaunchedEffect(selectedIndex) {
+            if (selectedIndex != pagerState.currentPage) {
+                pagerState.animateScrollToPage(selectedIndex)
+            }
+        }
+
+        // 图片计数器
+        if (images.size > 1) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .background(Background.copy(alpha = 0.7f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .background(Background.copy(alpha = 0.78f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 9.dp, vertical = 5.dp)
                 ) {
                     Text(
-                        text = "${selectedIndex + 1} / ${images.size}",
+                        text = "${pagerState.currentPage + 1} / ${images.size}",
                         color = TextPrimary,
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
         }
-        
+
         // 缩略图列表
         if (images.size > 1) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -323,27 +468,314 @@ fun ImageCarousel(images: List<String>) {
                 items(images.size) { index ->
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(8.dp))
                             .background(TextSecondary.copy(alpha = 0.1f))
                             .clickable { selectedIndex = index }
                             .then(
                                 if (index == selectedIndex) {
-                                    Modifier.border(2.dp, Accent)
+                                    Modifier.border(2.dp, Accent, RoundedCornerShape(8.dp))
                                 } else {
                                     Modifier
                                 }
                             )
                     ) {
-                        AsyncImage(
-                            model = "http://124.223.50.79:3002${images[index]}",
-                            contentDescription = null,
+                        DetailCompressedImage(
+                            imagePath = images[index],
                             modifier = Modifier.fillMaxSize(),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                            size = 180,
+                            usePreview = false
                         )
                     }
                 }
             }
         }
+    }
+
+    if (viewerVisible && images.isNotEmpty()) {
+        FullscreenImageViewer(
+            images = images,
+            initialIndex = selectedIndex,
+            originalLoaded = originalLoaded,
+            onOriginalLoaded = {
+                viewedOriginalImages.add(it)
+                originalLoaded = originalLoaded + it
+            },
+            onIndexChanged = { selectedIndex = it },
+            onDismiss = { viewerVisible = false }
+        )
+    }
+}
+
+@Composable
+private fun DetailCompressedImage(
+    imagePath: String,
+    modifier: Modifier = Modifier,
+    size: Int,
+    usePreview: Boolean
+) {
+    var useOriginalFallback by remember(imagePath, usePreview) { mutableStateOf(false) }
+    val compressedUrl = if (usePreview) previewImageUrl(imagePath) else thumbnailImageUrl(imagePath)
+    val imageUrl = if (useOriginalFallback) originalImageUrl(imagePath) else compressedUrl
+    val cachePrefix = if (usePreview) "detail-preview" else "detail-thumb"
+
+    AsyncImage(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(imageUrl)
+            .crossfade(120)
+            .size(size, size)
+            .scale(Scale.FILL)
+            .memoryCacheKey(if (useOriginalFallback) "detail-original-fallback:$imagePath" else "$cachePrefix:$imagePath:$size")
+            .diskCacheKey(if (useOriginalFallback) "detail-original-fallback:$imagePath" else "$cachePrefix:$imagePath:$size")
+            .listener(
+                onError = { _, _ ->
+                    if (!useOriginalFallback) useOriginalFallback = true
+                }
+            )
+            .build(),
+        contentDescription = null,
+        modifier = modifier,
+        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+    )
+}
+
+@Composable
+private fun FullscreenImageViewer(
+    images: List<String>,
+    initialIndex: Int,
+    originalLoaded: Set<String>,
+    onOriginalLoaded: (String) -> Unit,
+    onIndexChanged: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val pagerState = rememberPagerState(pageCount = { images.size }, initialPage = initialIndex.coerceIn(0, images.lastIndex))
+    val selectedIndex = pagerState.currentPage
+    val context = LocalContext.current
+
+    LaunchedEffect(pagerState.currentPage) {
+        onIndexChanged(pagerState.currentPage)
+        val page = pagerState.currentPage
+        listOf(page, page - 1, page + 1)
+            .distinct().mapNotNull { images.getOrNull(it) }
+            .forEach { preloadOriginalImage(context, it) }
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        BackHandler { onDismiss() }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(androidx.compose.ui.graphics.Color.Black)
+        ) {
+        HorizontalPager(state = pagerState, userScrollEnabled = true, modifier = Modifier.fillMaxSize()) { page ->
+            val imagePath = images[page]
+            var originalReady by remember(imagePath) { mutableStateOf(false) }
+            var previewReady by remember(imagePath) { mutableStateOf(false) }
+            var imageScale by remember(imagePath) { mutableStateOf(1f) }
+            var imageOffsetX by remember(imagePath) { mutableStateOf(0f) }
+            var imageOffsetY by remember(imagePath) { mutableStateOf(0f) }
+
+            Box(
+                modifier = Modifier.fillMaxSize()
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onDismiss() }
+            ) {
+                if (!originalReady) {
+                    if (!previewReady) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(thumbnailImageUrl(imagePath)).crossfade(80).scale(Scale.FIT)
+                                .memoryCacheKey("detail-thumb:$imagePath:180").diskCacheKey("detail-thumb:$imagePath:180").build(),
+                            contentDescription = null, modifier = Modifier.fillMaxSize(),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                        )
+                    }
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(previewImageUrl(imagePath)).crossfade(160).scale(Scale.FIT)
+                            .memoryCacheKey("detail-preview:$imagePath:1280").diskCacheKey("detail-preview:$imagePath:1280")
+                            .listener(onSuccess = { _, _ -> previewReady = true }).build(),
+                        contentDescription = null, modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                    )
+                }
+
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(originalImageUrl(imagePath)).crossfade(false).scale(Scale.FIT)
+                        .memoryCacheKey("viewer-original:$imagePath").diskCacheKey("viewer-original:$imagePath").build(),
+                    onSuccess = { originalReady = true; onOriginalLoaded(imagePath) },
+                    onError = { originalReady = false },
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize()
+                        .graphicsLayer { scaleX = imageScale; scaleY = imageScale; translationX = imageOffsetX; translationY = imageOffsetY }
+                        .pointerInput(originalReady, imageScale) {
+                            if (originalReady && imageScale > 1.01f) {
+                                detectTransformGestures { _, pan, zoom, _ ->
+                                    val ns = (imageScale * zoom).coerceIn(1f, 5f)
+                                    imageScale = ns
+                                    if (ns <= 1.01f) { imageScale = 1f; imageOffsetX = 0f; imageOffsetY = 0f }
+                                    else { imageOffsetX += pan.x; imageOffsetY += pan.y }
+                                }
+                            }
+                        },
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                )
+
+                if (!originalReady) {
+                    Box(
+                        modifier = Modifier.align(Alignment.Center).size(54.dp)
+                            .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.34f), RoundedCornerShape(27.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = androidx.compose.ui.graphics.Color.White, strokeWidth = 2.5.dp, modifier = Modifier.size(28.dp))
+                    }
+                }
+            }
+        }
+
+        Text(
+            text = "关闭",
+            color = androidx.compose.ui.graphics.Color.White,
+            fontSize = 15.sp,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 16.dp, top = 36.dp)
+                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.34f), RoundedCornerShape(16.dp))
+                .clickable { onDismiss() }
+                .padding(horizontal = 12.dp, vertical = 7.dp)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .padding(start = 42.dp, end = 42.dp, bottom = 36.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ViewerOutlineButton(
+                text = "⇩",
+                minWidth = 40.dp,
+                onClick = { downloadOriginalImage(context, images[pagerState.currentPage]) }
+            )
+
+            Spacer(modifier = Modifier.width(88.dp))
+
+            ViewerOutlineButton(
+                text = "${selectedIndex + 1} / ${images.size}",
+                minWidth = 52.dp,
+                onClick = { }
+            )
+        }
+    }
+}
+}
+
+@Composable
+private fun ViewerOutlineButton(
+    text: String,
+    minWidth: androidx.compose.ui.unit.Dp,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .height(32.dp)
+            .defaultMinSize(minWidth = minWidth)
+            .border(1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.92f), RoundedCornerShape(8.dp))
+            .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.22f), RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 9.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = androidx.compose.ui.graphics.Color.White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+private fun downloadOriginalImage(context: Context, imagePath: String) {
+    val appContext = context.applicationContext
+    val url = originalImageUrl(imagePath)
+    val filename = imagePath.substringAfterLast('/').ifBlank { "goodx-image.jpg" }
+
+    Toast.makeText(context, "开始下载原图", Toast.LENGTH_SHORT).show()
+
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            val bytes = URL(url).openStream().use { it.readBytes() }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val values = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, filename)
+                    put(MediaStore.Images.Media.MIME_TYPE, guessImageMimeType(filename))
+                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
+                val resolver = appContext.contentResolver
+                val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+                    ?: throw IllegalStateException("无法创建相册文件")
+
+                resolver.openOutputStream(uri)?.use { it.write(bytes) }
+                    ?: throw IllegalStateException("无法写入相册文件")
+
+                values.clear()
+                values.put(MediaStore.Images.Media.IS_PENDING, 0)
+                resolver.update(uri, values, null, null)
+            } else {
+                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                if (!picturesDir.exists()) picturesDir.mkdirs()
+                val file = File(picturesDir, filename)
+                file.writeBytes(bytes)
+                MediaScannerConnection.scanFile(appContext, arrayOf(file.absolutePath), arrayOf(guessImageMimeType(filename)), null)
+            }
+
+            CoroutineScope(Dispatchers.Main).launch {
+                Toast.makeText(appContext, "成功保存到相册", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            CoroutineScope(Dispatchers.Main).launch {
+                Toast.makeText(appContext, "下载失败: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+}
+
+private fun guessImageMimeType(filename: String): String = when (filename.substringAfterLast('.', "").lowercase()) {
+    "png" -> "image/png"
+    "webp" -> "image/webp"
+    "gif" -> "image/gif"
+    else -> "image/jpeg"
+}
+
+@Composable
+private fun ImageNavButton(
+    text: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(46.dp)
+            .background(
+                androidx.compose.ui.graphics.Color.Black.copy(alpha = if (enabled) 0.36f else 0.12f),
+                RoundedCornerShape(23.dp)
+            )
+            .clickable(enabled = enabled) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = androidx.compose.ui.graphics.Color.White.copy(alpha = if (enabled) 0.92f else 0.28f),
+            fontSize = 34.sp,
+            fontWeight = FontWeight.Light
+        )
     }
 }
 
@@ -352,8 +784,8 @@ fun LikeSection(
     item: GoodItem,
     onLikeToggle: () -> Unit
 ) {
-    val isLiked = item.likedBy.isNotEmpty()
-    
+    val isLiked = !item.likedBy.isNullOrEmpty()
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
@@ -378,7 +810,7 @@ fun LikeSection(
 }
 
 @Composable
-fun CommentItem(comment: Comment) {
+fun CommentItem(comment: Comment, onLike: () -> Unit = {}) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -403,10 +835,27 @@ fun CommentItem(comment: Comment) {
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = comment.content,
-            color = TextSecondary,
-            fontSize = 13.sp
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = comment.content.orEmpty(),
+                color = TextSecondary,
+                fontSize = 13.sp,
+                modifier = Modifier.weight(1f)
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { onLike() }
+            ) {
+                Text(
+                    text = if (comment.likesCount > 0) "♥" else "♡",
+                    color = if (comment.likesCount > 0) LikeRed else TextSecondary.copy(alpha = 0.3f),
+                    fontSize = 12.sp
+                )
+                if (comment.likesCount > 0) {
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Text("${comment.likesCount}", color = LikeRed, fontSize = 11.sp)
+                }
+            }
+        }
     }
 }

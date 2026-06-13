@@ -15,14 +15,14 @@ android {
         applicationId = "team.sharex.goodx"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 45
+        versionName = "0.6.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
-        create("release") {
+        create("goodx") {
             storeFile = file("../goodx-keystore.jks")
             storePassword = "goodx123"
             keyAlias = "goodx"
@@ -30,9 +30,12 @@ android {
         }
     }
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("goodx")
+        }
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("goodx")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -73,6 +76,9 @@ dependencies {
 
     // Image Loading
     implementation(libs.coil.compose)
+
+    // Blur / Glass effect
+    implementation(libs.colormath)
 
     // Local Storage
     implementation(libs.androidx.room.runtime)

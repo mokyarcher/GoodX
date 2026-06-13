@@ -64,7 +64,7 @@ fun LoginScreen(
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Accent,
-                unfocusedBorderColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.1f),
+                unfocusedBorderColor = TextSecondary.copy(alpha = 0.2f),
                 focusedTextColor = TextPrimary,
                 unfocusedTextColor = TextPrimary
             ),
@@ -85,7 +85,7 @@ fun LoginScreen(
             ),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Accent,
-                unfocusedBorderColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.1f),
+                unfocusedBorderColor = TextSecondary.copy(alpha = 0.2f),
                 focusedTextColor = TextPrimary,
                 unfocusedTextColor = TextPrimary
             ),
@@ -120,6 +120,7 @@ fun LoginScreen(
                             val auth = response.body()
                             if (auth != null) {
                                 TokenManager.saveToken(auth.token)
+                                TokenManager.saveUserInfo(auth.user.id, auth.user.username, auth.user.nickname, auth.user.avatar)
                                 onLoginSuccess()
                                 return@launch
                             }
