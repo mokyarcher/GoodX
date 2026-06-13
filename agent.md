@@ -130,19 +130,27 @@ pm2 status goodx-api
 
 ### 7. 每次改动后必须 Git Commit
 
-**每次完成一个独立功能或修复后，立即执行：**
+**每次完成一个独立功能或修复后，立即在 GoodX 独立仓库执行：**
 
 ```bash
+cd apps/android/apps/goodx
 git add -A
 git commit -m "<简短描述>"
 ```
 
 **禁止在没有 commit 的情况下做破坏性操作**（如 `git checkout --`、`git reset --hard`、`git clean -f`）。必须先 commit 保存当前状态。
 
-定期将本地提交推送到远程仓库：
+GoodX 为独立 Git 仓库，**不要操作父级 GameWorld 仓库**。
+
+```text
+仓库: https://github.com/mokyarcher/GoodX.git
+分支: main
+```
+
+定期推送：
 
 ```bash
-git push origin master
+git push origin main
 ```
 
 ### 8. 不覆盖用户已有改动
