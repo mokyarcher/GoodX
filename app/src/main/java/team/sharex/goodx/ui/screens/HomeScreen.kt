@@ -102,12 +102,21 @@ fun HomeScreen(
         val tabs = HomeTab.values()
         val pagerState = rememberPagerState(pageCount = { tabs.size }, initialPage = tabs.indexOf(selectedTab))
 
+        var disablePagerSync by remember { mutableStateOf(false) }
+
         LaunchedEffect(selectedTab) {
             val idx = tabs.indexOf(selectedTab)
-            if (idx != pagerState.currentPage) pagerState.animateScrollToPage(idx)
+            if (idx != pagerState.currentPage) {
+                disablePagerSync = true
+                pagerState.animateScrollToPage(idx)
+                // 动画完成后恢复 pager→tab 同步
+                disablePagerSync = false
+            }
         }
         LaunchedEffect(pagerState.currentPage) {
-            selectedTab = tabs[pagerState.currentPage]
+            if (!disablePagerSync) {
+                selectedTab = tabs[pagerState.currentPage]
+            }
         }
 
         HorizontalPager(state = pagerState, modifier = Modifier.padding(padding)) { page ->
