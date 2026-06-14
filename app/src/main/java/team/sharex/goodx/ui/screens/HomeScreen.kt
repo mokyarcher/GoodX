@@ -248,7 +248,7 @@ fun formatTimeAgo(timestamp: Long): String {
 // ============================================
 @Composable
 fun AllCategoriesTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Modifier) {
-    var selectedType by remember { mutableStateOf<ContentType?>(null) }
+    var selectedType by rememberSaveable { mutableStateOf<ContentType?>(ContentType.GOODS) }
     var goodItems by remember { mutableStateOf<List<GoodItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
