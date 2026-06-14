@@ -270,22 +270,20 @@ fun AllCategoriesTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier 
     Column(modifier = modifier.fillMaxSize().background(Background)) {
         Text("全部", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp))
 
+        // 顶部大类选择器
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            ContentType.values().forEach { type ->
+                val selected = selectedType == type
+                Box(modifier = Modifier.weight(1f).height(38.dp).background(if (selected) Accent.copy(alpha = 0.14f) else Color.Transparent, RoundedCornerShape(10.dp)).clickable { selectedType = if (selected) null else type }, contentAlignment = Alignment.Center) {
+                    Text(type.displayName(), color = if (selected) Accent else TextSecondary, fontSize = 14.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
+                }
+            }
+        }
+
         if (isLoading) Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Accent, strokeWidth = 2.dp) }
         else if (goodItems.isEmpty()) Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("暂无内容", color = TextSecondary, fontSize = 14.sp) }
         else LazyColumn(modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(goodItems, key = { it.id }) { item -> GoodItemCard(item = item, onClick = { cacheGoodItemPreview(item); onGoodItemClick(item.id) }) }
-        }
-
-        // 底部大类选择器
-        Surface(color = Surface, shadowElevation = 4.dp) {
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                ContentType.values().forEach { type ->
-                    val selected = selectedType == type
-                    Box(modifier = Modifier.weight(1f).height(38.dp).background(if (selected) Accent.copy(alpha = 0.14f) else Color.Transparent, RoundedCornerShape(10.dp)).clickable { selectedType = if (selected) null else type }, contentAlignment = Alignment.Center) {
-                        Text(type.displayName(), color = if (selected) Accent else TextSecondary, fontSize = 14.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
-                    }
-                }
-            }
         }
     }
 }
