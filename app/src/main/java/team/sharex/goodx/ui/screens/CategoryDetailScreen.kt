@@ -118,6 +118,50 @@ private fun CategoryGridCard(
 }
 
 @Composable
+fun ContentTypePostsScreen(
+    contentType: ContentType,
+    onBack: () -> Unit,
+    onGoodItemClick: (String) -> Unit = {}
+) {
+    BackHandler { onBack() }
+
+    var goodItems by remember { mutableStateOf<List<GoodItem>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+
+    fun loadItems() {
+        scope.launch {
+            isLoading = true
+            try {
+                val response = RetrofitClient.apiService.getGoodItems(
+                    contentType = contentType.name,
+                    sort = "newest"
+                )
+                if (response.isSuccessful) goodItems = response.body() ?: emptyList()
+            } catch (e: Exception) {}
+            isLoading = false
+        }
+    }
+
+    LaunchedEffect(contentType) { loadItems() }
+
+    Column(modifier = Modifier.fillMaxSize().background(Background)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("${contentType.iconEmoji()} ${contentType.displayName()}", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(modifier = Modifier.width(48.dp))
+        }
+
+        if (isLoading) Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Accent) }
+        else if (goodItems.isEmpty()) Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("暂无内容", color = TextSecondary, fontSize = 16.sp); Text("去发布第一个吧", color = TextSecondary.copy(alpha = 0.7f), fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp)) } }
+        else LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(goodItems, key = { it.id }) { item ->
+                GoodItemCard(item = item, onClick = { cacheGoodItemPreview(item); onGoodItemClick(item.id) })
+            }
+        }
+    }
+}
+
+@Composable
 fun CategoryDetailScreen(
     category: Category,
     onBack: () -> Unit,

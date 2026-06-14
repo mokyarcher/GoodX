@@ -291,7 +291,7 @@ fun CirclesTab(modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().background(Background).padding(horizontal = 20.dp)) {
         Text("圈子", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
         Text("创建或加入兴趣圈子", color = TextSecondary, fontSize = 13.sp, modifier = Modifier.padding(bottom = 16.dp))
-        Button(onClick = { showCreate = true }, colors = ButtonDefaults.buttonColors(containerColor = Accent), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("+ 创建圈子", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
+        Button(onClick = { showCreate = true }, colors = ButtonDefaults.buttonColors(containerColor = Accent), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("创建圈子", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
         Spacer(modifier = Modifier.height(20.dp))
         if (circles.isEmpty()) Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) { Text("暂无圈子，创建第一个吧", color = TextSecondary, fontSize = 14.sp) }
         else LazyColumn(modifier = Modifier.weight(1f)) {
@@ -340,11 +340,11 @@ fun ProfileTab(
         Text("@${TokenManager.getUsername() ?: ""}", color = TextSecondary, fontSize = 14.sp, modifier = Modifier.padding(top = 2.dp))
         TextButton(onClick = onEditProfileClick, colors = ButtonDefaults.textButtonColors(contentColor = Accent), modifier = Modifier.padding(bottom = 24.dp)) { Text("编辑资料", fontSize = 13.sp) }
 
-        Button(onClick = onPublishClick, colors = ButtonDefaults.buttonColors(containerColor = Accent), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("+ 发布好物", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
+        Button(onClick = onPublishClick, colors = ButtonDefaults.buttonColors(containerColor = Accent), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("发布好物", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
         Spacer(modifier = Modifier.height(12.dp))
-        OutlinedButton(onClick = onMyPostsClick, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border)), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("📋 我的发布", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
+        OutlinedButton(onClick = onMyPostsClick, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border)), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("我的发布", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
         Spacer(modifier = Modifier.height(12.dp))
-        OutlinedButton(onClick = onNotificationsClick, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border)), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text(if (unreadCount > 0) "✉️ 消息中心 ($unreadCount)" else "✉️ 消息中心", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
+        OutlinedButton(onClick = onNotificationsClick, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border)), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text(if (unreadCount > 0) " 消息中心 ($unreadCount)" else "消息中心", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
         Spacer(modifier = Modifier.height(12.dp))
 
         if (isAdmin) {
@@ -354,13 +354,13 @@ fun ProfileTab(
 
         OutlinedButton(onClick = {
             UpdateManager.checkForUpdate(context) { v, n, u -> updateInfo = Triple(v, n, u) }
-        }, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border.copy(alpha = 0.5f))), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("🔄 检查更新", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
+        }, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border.copy(alpha = 0.5f))), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("检查更新", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
         Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedButton(onClick = { showAbout = true }, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border.copy(alpha = 0.5f))), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("ℹ️ 关于 GoodX", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
+        OutlinedButton(onClick = { showAbout = true }, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border.copy(alpha = 0.5f))), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("关于GoodX", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
         Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedButton(onClick = { showLogoutConfirm = true }, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border.copy(alpha = 0.5f))), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("🚪 退出登录", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
+        OutlinedButton(onClick = { showLogoutConfirm = true }, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border.copy(alpha = 0.5f))), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("退出登录", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
     }
 
     if (showLogoutConfirm) AlertDialog(onDismissRequest = { showLogoutConfirm = false }, containerColor = Surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.padding(horizontal = 48.dp), title = { Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Text("退出登录", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp) } }, text = { Spacer(modifier = Modifier.height(8.dp)); Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { TextButton(onClick = { showLogoutConfirm = false }, colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)) { Text("取消", fontSize = 15.sp) }; TextButton(onClick = { showLogoutConfirm = false; onLogout() }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("确认", fontSize = 15.sp) } } }, confirmButton = {}, dismissButton = {})

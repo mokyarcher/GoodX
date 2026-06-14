@@ -21,7 +21,7 @@ import team.sharex.goodx.data.remote.TokenManager
 import team.sharex.goodx.model.Category
 import team.sharex.goodx.model.ContentType
 import team.sharex.goodx.ui.screens.CategoryDetailScreen
-import team.sharex.goodx.ui.screens.ContentTypeDetailScreen
+import team.sharex.goodx.ui.screens.ContentTypePostsScreen
 import team.sharex.goodx.data.remote.AdminPost
 import team.sharex.goodx.data.remote.AdminUser
 import team.sharex.goodx.ui.screens.AdminPostDetailScreen
@@ -74,7 +74,7 @@ sealed class Screen {
     object Login : Screen()
     object Register : Screen()
     object Home : Screen()
-    data class ContentTypeDetail(val contentType: ContentType) : Screen()
+    data class ContentTypePosts(val contentType: ContentType) : Screen()
     data class CategoryDetail(val category: Category) : Screen()
     data class GoodItemDetail(val itemId: String) : Screen()
     object Notifications : Screen()
@@ -105,7 +105,7 @@ fun AppNavigation() {
                 if (navStack.isNotEmpty()) {
                     val previous = navStack.last()
                     when (previous) {
-                        is Screen.ContentTypeDetail -> homeTab = HomeTab.ALL
+                        is Screen.ContentTypePosts -> homeTab = HomeTab.ALL
                         is Screen.CategoryDetail -> homeTab = HomeTab.ALL
                         is Screen.EditGoodItem -> homeTab = HomeTab.PROFILE
                         is Screen.Notifications -> homeTab = HomeTab.PROFILE
@@ -154,7 +154,7 @@ fun AppNavigation() {
                     currentScreen = Screen.Login
                 },
                 onCategoryClick = { category -> navigateTo(Screen.CategoryDetail(category)) },
-                onContentTypeClick = { ct -> navigateTo(Screen.ContentTypeDetail(ct)) },
+                onContentTypeClick = { ct -> navigateTo(Screen.ContentTypePosts(ct)) },
                 onGoodItemClick = { itemId -> navigateTo(Screen.GoodItemDetail(itemId)) },
                 onMyPostsClick = { navigateTo(Screen.MyPosts()) },
                 onNotificationsClick = { navigateTo(Screen.Notifications) },
@@ -168,9 +168,8 @@ fun AppNavigation() {
             targetState = currentScreen,
             transitionSpec = {
                 val isForward = when {
-                initialState is Screen.Home && targetState is Screen.ContentTypeDetail -> true
+                initialState is Screen.Home && targetState is Screen.ContentTypePosts -> true
                 initialState is Screen.Home && targetState is Screen.CategoryDetail -> true
-                initialState is Screen.ContentTypeDetail && targetState is Screen.CategoryDetail -> true
                 initialState is Screen.Home && targetState is Screen.GoodItemDetail -> true
                 initialState is Screen.Home && targetState is Screen.Notifications -> true
                 initialState is Screen.Notifications && targetState is Screen.AdminUserPosts -> true
@@ -197,7 +196,7 @@ fun AppNavigation() {
                 initialState is Screen.Notifications ||
                 initialState is Screen.MyPosts ||
                 initialState is Screen.EditGoodItem ||
-                initialState is Screen.ContentTypeDetail ||
+                initialState is Screen.ContentTypePosts ||
                 initialState is Screen.CategoryDetail
             )
 
@@ -230,19 +229,17 @@ fun AppNavigation() {
                 onNavigateToLogin = { navigateTo(Screen.Login) }
             )
             is Screen.Home -> { /* Home 已在底层渲染 */ }
-            is Screen.ContentTypeDetail -> ContentTypeDetailScreen(
+            is Screen.ContentTypePosts -> ContentTypePostsScreen(
                 contentType = screen.contentType,
                 onBack = {
                     if (navStack.isNotEmpty()) {
                         val previous = navStack.last()
-                        if (previous is Screen.ContentTypeDetail) homeTab = HomeTab.ALL
+                        if (previous is Screen.ContentTypePosts) homeTab = HomeTab.ALL
                         currentScreen = previous
                         navStack = navStack.dropLast(1)
                     }
                 },
-                onCategoryClick = { category ->
-                    navigateTo(Screen.CategoryDetail(category))
-                }
+                onGoodItemClick = { itemId -> navigateTo(Screen.GoodItemDetail(itemId)) }
             )
             is Screen.CategoryDetail -> CategoryDetailScreen(
                 category = screen.category,
