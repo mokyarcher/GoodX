@@ -23,9 +23,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -176,7 +178,7 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
 
     LiquidGlassBackdrop(modifier = modifier.fillMaxSize(), baseColor = Background, accentColor = Accent) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Row(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 8.dp, bottom = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 4.dp, bottom = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("发现", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 TextButton(onClick = { loadItems() }, enabled = !isLoading, colors = ButtonDefaults.textButtonColors(contentColor = if (isLoading) TextSecondary else Accent)) { Text("↻", fontSize = 24.sp) }
             }
@@ -195,7 +197,7 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
 @Composable
 fun GoodItemCard(item: GoodItem, onClick: () -> Unit = {}) {
     val cardShape = RoundedCornerShape(22.dp)
-    Row(modifier = Modifier.fillMaxWidth().height(120.dp).shadow(10.dp, cardShape, ambientColor = androidx.compose.ui.graphics.Color(0xFF5CA9A5).copy(alpha = 0.14f), spotColor = androidx.compose.ui.graphics.Color(0xFF5CA9A5).copy(alpha = 0.18f)).clip(cardShape).background(brush = Brush.linearGradient(listOf(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.22f), BackgroundSecondary.copy(alpha = 0.42f), androidx.compose.ui.graphics.Color.White.copy(alpha = 0.16f)))).border(1.dp, Brush.linearGradient(listOf(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.55f), Accent.copy(alpha = 0.16f), androidx.compose.ui.graphics.Color.White.copy(alpha = 0.20f))), cardShape).clickable { onClick() }
+    Row(modifier = Modifier.fillMaxWidth().height(120.dp).shadow(12.dp, cardShape, ambientColor = androidx.compose.ui.graphics.Color(0xFF5CA9A5).copy(alpha = 0.22f), spotColor = androidx.compose.ui.graphics.Color(0xFF0ABAB5).copy(alpha = 0.28f)).clip(cardShape).background(brush = Brush.linearGradient(listOf(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.28f), BackgroundSecondary.copy(alpha = 0.48f), androidx.compose.ui.graphics.Color(0xFFE8FDFB).copy(alpha = 0.22f)))).border(1.2.dp, Brush.linearGradient(listOf(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.70f), Accent.copy(alpha = 0.24f), androidx.compose.ui.graphics.Color.White.copy(alpha = 0.30f))), cardShape).drawBehind { drawLine(brush = Brush.horizontalGradient(listOf(androidx.compose.ui.graphics.Color.Transparent, Color.White.copy(alpha = 0.50f), Color.White.copy(alpha = 0.30f), Color.Transparent)), start = Offset(size.width * 0.06f, 1f), end = Offset(size.width * 0.94f, 1f), strokeWidth = 1.6f) }.clickable { onClick() }
     ) {
         Box(modifier = Modifier.width(120.dp).fillMaxHeight()) {
             if (item.images.orEmpty().isNotEmpty()) {
