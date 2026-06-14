@@ -43,52 +43,66 @@ fun LiquidGlassBackdrop(
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color.White.copy(alpha = 0.72f),
-                            Color.White.copy(alpha = 0.18f),
+                            Color.White.copy(alpha = 0.82f),
+                            Color.White.copy(alpha = 0.24f),
                             Color.Transparent
                         ),
-                        center = Offset(w * 0.12f, h * 0.04f),
-                        radius = w * 0.72f
+                        center = Offset(w * 0.10f, h * 0.03f),
+                        radius = w * 0.78f
                     ),
-                    radius = w * 0.72f,
-                    center = Offset(w * 0.12f, h * 0.04f)
+                    radius = w * 0.78f,
+                    center = Offset(w * 0.10f, h * 0.03f)
                 )
 
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            accentColor.copy(alpha = 0.18f),
-                            accentColor.copy(alpha = 0.06f),
+                            accentColor.copy(alpha = 0.24f),
+                            accentColor.copy(alpha = 0.10f),
                             Color.Transparent
                         ),
-                        center = Offset(w * 0.92f, h * 0.14f),
-                        radius = w * 0.62f
+                        center = Offset(w * 0.94f, h * 0.12f),
+                        radius = w * 0.68f
                     ),
-                    radius = w * 0.62f,
-                    center = Offset(w * 0.92f, h * 0.14f)
+                    radius = w * 0.68f,
+                    center = Offset(w * 0.94f, h * 0.12f)
                 )
 
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color(0xFFBDEDEA).copy(alpha = 0.22f),
-                            Color(0xFFCFEFED).copy(alpha = 0.08f),
+                            Color(0xFFD4F4F2).copy(alpha = 0.28f),
+                            Color(0xFFE0F6F4).copy(alpha = 0.12f),
                             Color.Transparent
                         ),
-                        center = Offset(w * 0.38f, h * 0.58f),
-                        radius = w * 0.82f
+                        center = Offset(w * 0.36f, h * 0.54f),
+                        radius = w * 0.88f
                     ),
-                    radius = w * 0.82f,
-                    center = Offset(w * 0.38f, h * 0.58f)
+                    radius = w * 0.88f,
+                    center = Offset(w * 0.36f, h * 0.54f)
+                )
+
+                // 额外的高光点：底部左侧小光斑
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            accentColor.copy(alpha = 0.16f),
+                            Color.Transparent
+                        ),
+                        center = Offset(w * 0.18f, h * 0.82f),
+                        radius = w * 0.34f
+                    ),
+                    radius = w * 0.34f,
+                    center = Offset(w * 0.18f, h * 0.82f)
                 )
 
                 drawRect(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color(0xFF88BDBA).copy(alpha = 0.08f)
+                            Color(0xFF7AB5B2).copy(alpha = 0.10f)
                         ),
-                        startY = h * 0.55f,
+                        startY = h * 0.50f,
                         endY = h
                     ),
                     topLeft = Offset.Zero,
@@ -100,15 +114,14 @@ fun LiquidGlassBackdrop(
 }
 
 /**
- * 液态玻璃背景层。
- * RenderEffect 在 Compose 中不是完整 backdrop blur，因此主要靠“半透明渐变 + 边缘高光 + 内阴影”建立玻璃厚度。
+ * 液态玻璃背景层 - 增强版。更通透、更炫的高光与折射。
  */
 @Composable
 fun LiquidGlassBackground(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 24.dp,
-    blurRadius: Dp = 28.dp,
-    tintColor: Color = Color.White.copy(alpha = 0.28f),
+    blurRadius: Dp = 32.dp,
+    tintColor: Color = Color.White.copy(alpha = 0.32f),
     accentColor: Color = Color(0xFF0ABAB5)
 ) {
     val shape = RoundedCornerShape(cornerRadius)
@@ -137,13 +150,14 @@ fun LiquidGlassBackground(
             .background(
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.42f),
+                        Color.White.copy(alpha = 0.52f),
                         tintColor,
-                        accentColor.copy(alpha = 0.10f),
-                        Color.White.copy(alpha = 0.18f)
+                        accentColor.copy(alpha = 0.14f),
+                        Color(0xFFE8F8F6).copy(alpha = 0.24f),
+                        Color.White.copy(alpha = 0.22f)
                     ),
                     start = Offset.Zero,
-                    end = Offset(900f, 900f)
+                    end = Offset(1100f, 900f)
                 ),
                 shape = shape
             )
@@ -155,59 +169,60 @@ fun LiquidGlassBackground(
                 drawRect(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color.White.copy(alpha = 0.58f),
-                            Color.White.copy(alpha = 0.18f),
+                            Color.White.copy(alpha = 0.64f),
+                            Color.White.copy(alpha = 0.22f),
                             Color.Transparent
                         ),
                         startY = 0f,
-                        endY = h * 0.42f
+                        endY = h * 0.48f
                     ),
-                    size = Size(w, h * 0.42f)
+                    size = Size(w, h * 0.48f)
                 )
 
                 // 左上角液态高光
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color.White.copy(alpha = 0.42f),
-                            Color.White.copy(alpha = 0.12f),
+                            Color.White.copy(alpha = 0.54f),
+                            Color.White.copy(alpha = 0.18f),
+                            Color.White.copy(alpha = 0.04f),
                             Color.Transparent
                         ),
-                        center = Offset(w * 0.12f, h * 0.10f),
-                        radius = w * 0.48f
+                        center = Offset(w * 0.08f, h * 0.06f),
+                        radius = w * 0.56f
                     ),
-                    radius = w * 0.48f,
-                    center = Offset(w * 0.12f, h * 0.10f)
+                    radius = w * 0.56f,
+                    center = Offset(w * 0.08f, h * 0.06f)
                 )
 
                 // 右下角青色折射
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            accentColor.copy(alpha = 0.16f),
-                            accentColor.copy(alpha = 0.06f),
+                            accentColor.copy(alpha = 0.22f),
+                            accentColor.copy(alpha = 0.10f),
                             Color.Transparent
                         ),
-                        center = Offset(w * 0.92f, h * 0.92f),
-                        radius = w * 0.52f
+                        center = Offset(w * 0.94f, h * 0.94f),
+                        radius = w * 0.58f
                     ),
-                    radius = w * 0.52f,
-                    center = Offset(w * 0.92f, h * 0.92f)
+                    radius = w * 0.58f,
+                    center = Offset(w * 0.94f, h * 0.94f)
                 )
 
-                // 底部内阴影，制造厚度
+                // 底部内阴影
                 drawRect(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color(0xFF4A7774).copy(alpha = 0.05f),
-                            Color(0xFF234845).copy(alpha = 0.10f)
+                            Color(0xFF3A6764).copy(alpha = 0.06f),
+                            Color(0xFF1A3835).copy(alpha = 0.14f)
                         ),
-                        startY = h * 0.50f,
+                        startY = h * 0.45f,
                         endY = h
                     ),
-                    topLeft = Offset(0f, h * 0.50f),
-                    size = Size(w, h * 0.50f)
+                    topLeft = Offset(0f, h * 0.45f),
+                    size = Size(w, h * 0.55f)
                 )
 
                 // 顶部锐利亮线
@@ -215,22 +230,45 @@ fun LiquidGlassBackground(
                     brush = Brush.horizontalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.White.copy(alpha = 0.72f),
-                            Color.White.copy(alpha = 0.48f),
+                            Color.White.copy(alpha = 0.82f),
+                            Color.White.copy(alpha = 0.54f),
                             Color.Transparent
                         )
                     ),
-                    start = Offset(w * 0.08f, 0.8f),
-                    end = Offset(w * 0.92f, 0.8f),
-                    strokeWidth = 1.4f
+                    start = Offset(w * 0.06f, 0.6f),
+                    end = Offset(w * 0.94f, 0.6f),
+                    strokeWidth = 1.6f
                 )
 
-                // 斜向玻璃光带
+                // 斜向玻璃光带1
                 drawLine(
-                    color = Color.White.copy(alpha = 0.16f),
-                    start = Offset(w * 0.05f, h * 0.22f),
-                    end = Offset(w * 0.72f, 0f),
-                    strokeWidth = 2.2f
+                    color = Color.White.copy(alpha = 0.22f),
+                    start = Offset(w * 0.03f, h * 0.26f),
+                    end = Offset(w * 0.68f, 0f),
+                    strokeWidth = 2.8f
+                )
+
+                // 斜向玻璃光带2（反向）
+                drawLine(
+                    color = Color.White.copy(alpha = 0.10f),
+                    start = Offset(w * 0.88f, h * 0.88f),
+                    end = Offset(w * 0.24f, h * 0.56f),
+                    strokeWidth = 3.2f
+                )
+
+                // 中间水平光带（更明显的液态流动感）
+                drawLine(
+                    brush = Brush.horizontalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.White.copy(alpha = 0.14f),
+                            Color.White.copy(alpha = 0.06f),
+                            Color.Transparent
+                        )
+                    ),
+                    start = Offset(w * 0.15f, h * 0.35f),
+                    end = Offset(w * 0.85f, h * 0.35f),
+                    strokeWidth = 1.8f
                 )
             }
     )
