@@ -34,6 +34,7 @@ import team.sharex.goodx.ui.screens.GoodItemDetailScreen
 import team.sharex.goodx.ui.screens.HomeScreen
 import team.sharex.goodx.ui.screens.HomeTab
 import team.sharex.goodx.ui.screens.LoginScreen
+import team.sharex.goodx.ui.screens.SplashScreen
 import team.sharex.goodx.ui.screens.MyPostsScreen
 import team.sharex.goodx.ui.screens.NotificationsScreen
 import team.sharex.goodx.ui.screens.RegisterScreen
@@ -69,6 +70,7 @@ class MainActivity : ComponentActivity() {
 }
 
 sealed class Screen {
+    object Splash : Screen()
     object Login : Screen()
     object Register : Screen()
     object Home : Screen()
@@ -88,7 +90,7 @@ sealed class Screen {
 @Composable
 fun AppNavigation() {
     var currentScreen by remember { mutableStateOf<Screen>(
-        if (TokenManager.isLoggedIn()) Screen.Home else Screen.Login
+        if (TokenManager.isLoggedIn()) Screen.Splash else Screen.Login
     ) }
     var navStack by remember { mutableStateOf<List<Screen>>(emptyList()) }
     var homeTab by remember { mutableStateOf(HomeTab.DISCOVER) }
@@ -216,6 +218,9 @@ fun AppNavigation() {
         label = "screen_transition"
     ) { screen ->
         when (screen) {
+            is Screen.Splash -> SplashScreen(
+                onReady = { navigateAndReset(Screen.Home) }
+            )
             is Screen.Login -> LoginScreen(
                 onLoginSuccess = { navigateAndReset(Screen.Home) },
                 onNavigateToRegister = { navigateTo(Screen.Register) }
