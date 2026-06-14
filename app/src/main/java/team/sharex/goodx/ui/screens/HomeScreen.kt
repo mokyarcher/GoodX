@@ -176,8 +176,8 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
 
     LiquidGlassBackdrop(modifier = modifier.fillMaxSize(), baseColor = Background, accentColor = Accent) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Row(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 24.dp, bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("发现", color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Row(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("发现", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 TextButton(onClick = { loadItems() }, enabled = !isLoading, colors = ButtonDefaults.textButtonColors(contentColor = if (isLoading) TextSecondary else Accent)) { Text("↻", fontSize = 24.sp) }
             }
             if (isLoading) Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Accent, strokeWidth = 2.dp) }
@@ -247,7 +247,7 @@ fun formatTimeAgo(timestamp: Long): String {
 @Composable
 fun AllCategoriesTab(onContentTypeClick: (ContentType) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().background(Background)) {
-        Text("全部", color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 16.dp))
+        Text("全部", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 16.dp))
         LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             items(ContentType.values().toList()) { type -> ContentTypeCard(contentType = type, onClick = { onContentTypeClick(type) }) }
         }
@@ -287,7 +287,7 @@ fun CirclesTab(modifier: Modifier = Modifier) {
     val myName = TokenManager.getNickname() ?: TokenManager.getUsername() ?: "我"
 
     Column(modifier = modifier.fillMaxSize().background(Background).padding(horizontal = 20.dp)) {
-        Text("圈子", color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 24.dp, bottom = 8.dp))
+        Text("圈子", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
         Text("创建或加入兴趣圈子", color = TextSecondary, fontSize = 13.sp, modifier = Modifier.padding(bottom = 16.dp))
         Button(onClick = { showCreate = true }, colors = ButtonDefaults.buttonColors(containerColor = Accent), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("+ 创建圈子", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
         Spacer(modifier = Modifier.height(20.dp))
@@ -367,7 +367,7 @@ fun ProfileTab(
 
     updateInfo?.let { (version, note, url) ->
         val isDownloading = downloadProgress >= 0
-        AlertDialog(onDismissRequest = { if (!isDownloading) { updateInfo = null; downloadProgress = -1 } }, containerColor = Surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.padding(horizontal = 32.dp), title = { Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Text(if (isDownloading) "正在下载..." else "发现新版本 $version", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp) } }, text = { if (isDownloading) Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("$downloadProgress%", color = Accent, fontSize = 28.sp, fontWeight = FontWeight.Bold); Spacer(modifier = Modifier.height(8.dp)); LinearProgressIndicator(progress = { downloadProgress / 100f }, color = Accent, modifier = Modifier.fillMaxWidth()); Spacer(modifier = Modifier.height(8.dp)); Text(url, color = TextSecondary.copy(alpha = 0.4f), fontSize = 9.sp, maxLines = 1) } else Text(note, color = TextSecondary, fontSize = 14.sp) }, confirmButton = { if (!isDownloading) TextButton(onClick = { downloadProgress = 0; UpdateManager.downloadAndInstall(context, url) { pct -> downloadProgress = pct } }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("立即更新", fontSize = 15.sp) } }, dismissButton = { TextButton(onClick = { updateInfo = null; downloadProgress = -1 }, colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)) { Text(if (isDownloading) "后台下载" else "稍后", fontSize = 15.sp) } })
+        AlertDialog(onDismissRequest = { if (!isDownloading) { updateInfo = null; downloadProgress = -1 } }, containerColor = Surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.padding(horizontal = 32.dp), title = { Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Text(if (isDownloading) "正在下载..." else "发现新版本 $version", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp) } }, text = { if (isDownloading) Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("$downloadProgress%", color = Accent, fontSize = 18.sp, fontWeight = FontWeight.SemiBold); Spacer(modifier = Modifier.height(8.dp)); LinearProgressIndicator(progress = { downloadProgress / 100f }, color = Accent, modifier = Modifier.fillMaxWidth()); Spacer(modifier = Modifier.height(8.dp)); Text(url, color = TextSecondary.copy(alpha = 0.4f), fontSize = 9.sp, maxLines = 1) } else Text(note, color = TextSecondary, fontSize = 14.sp) }, confirmButton = { if (!isDownloading) TextButton(onClick = { downloadProgress = 0; UpdateManager.downloadAndInstall(context, url) { pct -> downloadProgress = pct } }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("立即更新", fontSize = 15.sp) } }, dismissButton = { TextButton(onClick = { updateInfo = null; downloadProgress = -1 }, colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)) { Text(if (isDownloading) "后台下载" else "稍后", fontSize = 15.sp) } })
     }
 }
 
