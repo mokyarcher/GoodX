@@ -169,7 +169,6 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
     val scope = rememberCoroutineScope()
 
     fun loadItems() { scope.launch {
-        if (!isLoading) return@launch  // 缓存已有数据就不重复加载
         isLoading = true
         try { val r = RetrofitClient.apiService.getGoodItems(sort = "newest"); if (r.isSuccessful) goodItems = r.body() ?: emptyList() } catch (_: Exception) {}; isLoading = false }
     }
