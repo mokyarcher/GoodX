@@ -176,7 +176,7 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
 
     LiquidGlassBackdrop(modifier = modifier.fillMaxSize(), baseColor = Background, accentColor = Accent) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Row(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 40.dp, bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 24.dp, bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("发现", color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 TextButton(onClick = { loadItems() }, enabled = !isLoading, colors = ButtonDefaults.textButtonColors(contentColor = if (isLoading) TextSecondary else Accent)) { Text("↻", fontSize = 24.sp) }
             }
@@ -247,7 +247,7 @@ fun formatTimeAgo(timestamp: Long): String {
 @Composable
 fun AllCategoriesTab(onContentTypeClick: (ContentType) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().background(Background)) {
-        Text("全部", color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 40.dp, bottom = 16.dp))
+        Text("全部", color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 16.dp))
         LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             items(ContentType.values().toList()) { type -> ContentTypeCard(contentType = type, onClick = { onContentTypeClick(type) }) }
         }
@@ -287,7 +287,7 @@ fun CirclesTab(modifier: Modifier = Modifier) {
     val myName = TokenManager.getNickname() ?: TokenManager.getUsername() ?: "我"
 
     Column(modifier = modifier.fillMaxSize().background(Background).padding(horizontal = 20.dp)) {
-        Text("圈子", color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 40.dp, bottom = 8.dp))
+        Text("圈子", color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 24.dp, bottom = 8.dp))
         Text("创建或加入兴趣圈子", color = TextSecondary, fontSize = 13.sp, modifier = Modifier.padding(bottom = 16.dp))
         Button(onClick = { showCreate = true }, colors = ButtonDefaults.buttonColors(containerColor = Accent), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("+ 创建圈子", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
         Spacer(modifier = Modifier.height(20.dp))
