@@ -176,7 +176,7 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
 
     LiquidGlassBackdrop(modifier = modifier.fillMaxSize(), baseColor = Background, accentColor = Accent) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Row(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 16.dp, bottom = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 8.dp, bottom = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("发现", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 TextButton(onClick = { loadItems() }, enabled = !isLoading, colors = ButtonDefaults.textButtonColors(contentColor = if (isLoading) TextSecondary else Accent)) { Text("↻", fontSize = 24.sp) }
             }
