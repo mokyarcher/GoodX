@@ -2,6 +2,7 @@ package team.sharex.goodx.ui.screens
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,6 +33,7 @@ fun AdminScreen(onBack: () -> Unit, onUserClick: (AdminUser) -> Unit = {}, onAll
 
     var users by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var selectedTab by remember { mutableStateOf("users") }
     var editingUser by remember { mutableStateOf<AdminUser?>(null) }
     var showDeleteConfirm by remember { mutableStateOf<AdminUser?>(null) }
     val scope = rememberCoroutineScope()
@@ -74,17 +76,17 @@ fun AdminScreen(onBack: () -> Unit, onUserClick: (AdminUser) -> Unit = {}, onAll
                 CircularProgressIndicator(color = Accent)
             }
         } else {
+            // 顶部 Tab：用户 / 帖子
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AdminTabButton("用户", selectedTab == "users", Modifier.weight(1f)) { selectedTab = "users" }
+                AdminTabButton("帖子", selectedTab == "posts", Modifier.weight(1f)) { selectedTab = "posts"; onAllPosts() }
+            }
             Text(
                 text = "共 ${users.size} 个用户",
                 color = TextSecondary,
                 fontSize = 13.sp,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
-            TextButton(
-                onClick = onAllPosts,
-                colors = ButtonDefaults.textButtonColors(contentColor = Accent),
-                modifier = Modifier.padding(horizontal = 16.dp)
-            ) { Text("📋 全部帖子管理", fontSize = 13.sp) }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -237,6 +239,24 @@ fun AdminScreen(onBack: () -> Unit, onUserClick: (AdminUser) -> Unit = {}, onAll
                     Text("取消")
                 }
             }
+        )
+    }
+}
+
+@Composable
+private fun AdminTabButton(text: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    Box(
+        modifier = modifier
+            .height(42.dp)
+            .background(if (selected) Accent.copy(alpha = 0.14f) else Surface, RoundedCornerShape(12.dp))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = if (selected) Accent else TextSecondary,
+            fontSize = 15.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
         )
     }
 }
