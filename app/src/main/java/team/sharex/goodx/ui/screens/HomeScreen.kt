@@ -8,6 +8,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -177,46 +179,72 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
         try { val r = RetrofitClient.apiService.getGoodItems(sort = "newest"); if (r.isSuccessful) goodItems = r.body() ?: emptyList() } catch (_: Exception) {}; isLoading = false }
     }
     var isRefreshing by remember { mutableStateOf(false) }
-    var pullOffset by remember { mutableStateOf(0f) }
-    val pullThreshold = 100f
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    var rawPullOffset by remember { mutableStateOf(0f) }
+    val refreshThreshold = 70f
+    val animatedOffset by animateFloatAsState(targetValue = if (isRefreshing) refreshThreshold else 0f, animationSpec = tween(250))
 
     LaunchedEffect(Unit) { if (goodItems.isEmpty()) loadItems() }
-    LaunchedEffect(isRefreshing) { if (isRefreshing) { loadItems(); isRefreshing = false; pullOffset = 0f } }
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            loadItems()
+            isRefreshing = false
+            rawPullOffset = 0f
+        }
+    }
 
-    // 下拉刷新 nestedScroll 连接
-    val pullConnection = remember { object : NestedScrollConnection {
-        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-            if (pullOffset > 0f && available.y < 0f) { val consumed = available.y; pullOffset = (pullOffset + consumed).coerceAtLeast(0f); return Offset(0f, consumed) }
-            return Offset.Zero
-        }
-        override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-            if (available.y > 0f && source == NestedScrollSource.Drag && listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0) {
-                pullOffset = (pullOffset + available.y * 0.5f).coerceAtMost(pullThreshold * 1.5f)
-                if (pullOffset >= pullThreshold && !isRefreshing) isRefreshing = true
-                return Offset(0f, available.y)
+    val pullConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (rawPullOffset > 0f && available.y < 0f) {
+                    val consumed = available.y
+                    rawPullOffset = (rawPullOffset + consumed).coerceAtLeast(0f)
+                    return Offset(0f, consumed)
+                }
+                return Offset.Zero
             }
-            return Offset.Zero
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                if (available.y > 0f && source == NestedScrollSource.Drag && !isRefreshing &&
+                    listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
+                ) {
+                    rawPullOffset = (rawPullOffset + available.y * 0.5f).coerceAtMost(refreshThreshold * 1.8f)
+                    if (rawPullOffset >= refreshThreshold) isRefreshing = true
+                    return Offset(0f, available.y)
+                }
+                return Offset.Zero
+            }
         }
-    } }
+    }
+    val indicatorHeight = (if (isRefreshing) animatedOffset else rawPullOffset).coerceAtMost(refreshThreshold)
 
     LiquidGlassBackdrop(modifier = modifier.fillMaxSize(), baseColor = Background, accentColor = Accent) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 40.dp, bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("发现", color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                if (isRefreshing) CircularProgressIndicator(color = Accent, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
             }
             if (isLoading) Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Accent, strokeWidth = 2.dp) }
             else if (goodItems.isEmpty()) Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("暂无好物", color = TextSecondary, fontSize = 16.sp); Text("去发布第一个好物吧", color = TextTertiary, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp)) } }
             else Box(modifier = Modifier.fillMaxSize().nestedScroll(pullConnection)) {
-                LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    items(goodItems, key = { it.id }) { item -> GoodItemCard(item = item, onClick = { cacheGoodItemPreview(item); onGoodItemClick(item.id) }) }
-                }
-                // 下拉指示器
-                if (pullOffset > 4f && !isRefreshing) {
-                    Box(modifier = Modifier.fillMaxWidth().padding(top = 2.dp), contentAlignment = Alignment.Center) {
-                        Text(text = "↓ 下拉刷新", color = TextSecondary.copy(alpha = (pullOffset / pullThreshold).coerceAtMost(0.8f)), fontSize = 12.sp)
+                LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    // 顶部刷新留白
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth().height(indicatorHeight.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isRefreshing) {
+                                CircularProgressIndicator(color = Accent, modifier = Modifier.size(22.dp), strokeWidth = 2.5.dp)
+                            } else if (indicatorHeight > 10f) {
+                                CircularProgressIndicator(
+                                    color = Accent.copy(alpha = (indicatorHeight / refreshThreshold).coerceAtMost(0.9f)),
+                                    modifier = Modifier.size(22.dp),
+                                    strokeWidth = 2.5.dp,
+                                    progress = { (indicatorHeight / refreshThreshold).coerceAtMost(0.95f) }
+                                )
+                            }
+                        }
                     }
+                    items(goodItems, key = { it.id }) { item -> GoodItemCard(item = item, onClick = { cacheGoodItemPreview(item); onGoodItemClick(item.id) }) }
                 }
             }
         }
