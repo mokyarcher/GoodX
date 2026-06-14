@@ -164,12 +164,16 @@ fun NavItem(icon: String, label: String, isSelected: Boolean, onClick: () -> Uni
 // ============================================
 @Composable
 fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Modifier) {
-    var goodItems by remember { mutableStateOf<List<GoodItem>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
+    var goodItems by remember { mutableStateOf<List<GoodItem>>(RetrofitClient.goodItemsCache ?: emptyList()) }
+    var isLoading by remember { mutableStateOf(goodItems.isEmpty()) }
     val scope = rememberCoroutineScope()
 
-    fun loadItems() { scope.launch { isLoading = true; try { val r = RetrofitClient.apiService.getGoodItems(sort = "newest"); if (r.isSuccessful) goodItems = r.body() ?: emptyList() } catch (_: Exception) {}; isLoading = false } }
-    LaunchedEffect(Unit) { loadItems() }
+    fun loadItems() { scope.launch {
+        if (!isLoading) return@launch  // 缓存已有数据就不重复加载
+        isLoading = true
+        try { val r = RetrofitClient.apiService.getGoodItems(sort = "newest"); if (r.isSuccessful) goodItems = r.body() ?: emptyList() } catch (_: Exception) {}; isLoading = false }
+    }
+    LaunchedEffect(Unit) { if (goodItems.isEmpty()) loadItems() }
 
     LiquidGlassBackdrop(modifier = modifier.fillMaxSize(), baseColor = Background, accentColor = Accent) {
         Column(modifier = Modifier.fillMaxSize()) {

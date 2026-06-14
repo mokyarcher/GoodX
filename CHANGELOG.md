@@ -364,3 +364,84 @@ GoodX 原先以 8 个基础品类承载所有内容，随着定位扩展，需�
 
 - `:app:compileDebugKotlin` 通过
 - `:app:assembleDebug` 通过
+
+---
+
+## 2026-06-13：个人中心与管理员后台大更新
+
+### 内容
+
+#### 个人资料与头像
+
+- 头像上传与展示
+- 昵称修改（用户名不可改，仅用于登录）
+- 编辑资料全屏页面
+- 个人页展示头像 + 昵称 + @用户名
+- 修改密码功能
+
+#### 消息中心
+
+- 通知系统（Notification 模型）
+- 帖子被下架自动通知作者
+- 提交审核通知管理员
+- 审核通过/拒绝通知作者
+- 未读红点 + 全部已读
+- 通知跳转已下架/管理员后台
+
+#### 管理员后台
+
+- admin 账户自动创建（Mqm112358）
+- 管理员可见用户列表
+- 封禁/解封用户
+- 删除用户（不可删除管理员）
+- 查看用户所有帖子
+- 下架帖子（需填写下架理由）
+- 审核通过/拒绝重新上架
+- 完整审核流程
+
+#### 在线更新
+
+- 版本检查接口 `/api/version`
+- APK 静态托管 `/apk/goodx.apk`
+- 检查更新 → 下载进度条 → 自动安装
+- HttpURLConnection 直连下载（避开 DownloadManager 兼容问题）
+- ACTION_VIEW 安装（兼容 ColorOS Android 16）
+- 唯一文件名（避免 FileProvider URI 缓存）
+- 双重返回退出防误触
+- Gradle 配置缓存问题发现与修复
+
+#### 卡片与交互
+
+- GoodItemCard 液态玻璃完整重写
+- 卡片显示作者头像 + 昵称
+- 点赞数 + 评论数 + 最新互动（xxx 刚刚评论/点赞）
+- 详情页评论点赞
+- 全屏图片 HorizontalPager 左右滑动切图
+- 详情页滚动位置记忆（saveable state）
+- 底部导航支持滑动切标签
+- 发现页 ↻ 下拉刷新
+
+#### UI 优化
+
+- 退出登录确认弹窗
+- 关于 GoodX 弹窗
+- 输入框统一样式（浅色框线）
+- 评论框与发送按钮高度统一
+- 发布页去平台显示
+- 卡片去 subCategory 显示
+- 详情页去顶栏标题
+
+### 踩坑记录
+
+- Gradle Configuration Cache 导致 versionCode 不更新，需 `--no-configuration-cache`
+- DownloadManager 在不同 Android 版本上行为不一致
+- FileProvider + 同文件名导致第二次安装读旧包
+- ColorOS Android 16 不支持 ACTION_INSTALL_PACKAGE，改用 ACTION_VIEW
+- HomeScreen.kt 被 git checkout 覆盖后完整重建
+- GoodX 独立仓库，不与父仓库混用
+
+### 验证
+
+- `:app:compileDebugKotlin` 通过数十轮
+- `:app:assembleDebug` 多次线上部署验证
+- OPPO Android 16 + 联想平板 Android 15 兼容通过
