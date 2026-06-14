@@ -207,8 +207,13 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
                 if (available.y > 0f && source == NestedScrollSource.Drag && !isRefreshing &&
                     listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
                 ) {
+                    val cacheFresh = System.currentTimeMillis() - RetrofitClient.cacheTimestamp < RetrofitClient.CACHE_VALID_MS
                     rawPullOffset = (rawPullOffset + available.y * 0.5f).coerceAtMost(refreshThreshold * 1.8f)
-                    if (rawPullOffset >= refreshThreshold) isRefreshing = true
+                    if (rawPullOffset >= refreshThreshold && !cacheFresh) isRefreshing = true
+                    else if (rawPullOffset >= refreshThreshold) {
+                        // 缓存还新鲜，收回留白
+                        rawPullOffset = 0f
+                    }
                     return Offset(0f, available.y)
                 }
                 return Offset.Zero
