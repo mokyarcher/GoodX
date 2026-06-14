@@ -27,7 +27,7 @@ import team.sharex.goodx.ui.theme.TextPrimary
 import team.sharex.goodx.ui.theme.TextSecondary
 
 @Composable
-fun AdminScreen(onBack: () -> Unit, onUserClick: (AdminUser) -> Unit = {}) {
+fun AdminScreen(onBack: () -> Unit, onUserClick: (AdminUser) -> Unit = {}, onAllPosts: () -> Unit = {}) {
     BackHandler { onBack() }
 
     var users by remember { mutableStateOf<List<AdminUser>>(emptyList()) }
@@ -80,6 +80,11 @@ fun AdminScreen(onBack: () -> Unit, onUserClick: (AdminUser) -> Unit = {}) {
                 fontSize = 13.sp,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
+            TextButton(
+                onClick = onAllPosts,
+                colors = ButtonDefaults.textButtonColors(contentColor = Accent),
+                modifier = Modifier.padding(horizontal = 16.dp)
+            ) { Text("📋 全部帖子管理", fontSize = 13.sp) }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),

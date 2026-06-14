@@ -24,6 +24,7 @@ import team.sharex.goodx.ui.screens.CategoryDetailScreen
 import team.sharex.goodx.ui.screens.ContentTypePostsScreen
 import team.sharex.goodx.data.remote.AdminPost
 import team.sharex.goodx.data.remote.AdminUser
+import team.sharex.goodx.ui.screens.AdminAllPostsScreen
 import team.sharex.goodx.ui.screens.AdminPostDetailScreen
 import team.sharex.goodx.ui.screens.AdminScreen
 import team.sharex.goodx.ui.screens.AdminUserPostsScreen
@@ -82,6 +83,7 @@ sealed class Screen {
     data class EditGoodItem(val itemId: String) : Screen()
     object EditProfile : Screen()
     object Admin : Screen()
+    object AdminAllPosts : Screen()
     data class AdminUserPosts(val user: AdminUser) : Screen()
     data class AdminPostDetail(val post: AdminPost, val user: AdminUser) : Screen()
     object CreateGoodItem : Screen()
@@ -318,6 +320,14 @@ fun AppNavigation() {
                     navigateTo(Screen.EditGoodItem(itemId))
                 }
             )
+            is Screen.AdminAllPosts -> AdminAllPostsScreen(
+                onBack = {
+                    if (navStack.isNotEmpty()) {
+                        currentScreen = navStack.last()
+                        navStack = navStack.dropLast(1)
+                    }
+                }
+            )
             is Screen.Admin -> AdminScreen(
                 onBack = {
                     if (navStack.isNotEmpty()) {
@@ -328,6 +338,9 @@ fun AppNavigation() {
                 },
                 onUserClick = { user ->
                     navigateTo(Screen.AdminUserPosts(user))
+                },
+                onAllPosts = {
+                    navigateTo(Screen.AdminAllPosts)
                 }
             )
             is Screen.AdminUserPosts -> AdminUserPostsScreen(

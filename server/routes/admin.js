@@ -216,6 +216,30 @@ router.delete('/posts/:id', auth, adminOnly, async (req, res) => {
   }
 });
 
+// 获取所有帖子（管理员审核用，含已删除用户的帖子）
+router.get('/all-posts', auth, adminOnly, async (req, res) => {
+  try {
+    const GoodItem = require('../models/GoodItem');
+    const items = await GoodItem.find({}).sort({ createdAt: -1 }).lean();
+    res.json(items.map(item => ({
+      id: item._id.toString(),
+      title: item.title,
+      description: item.description,
+      category: item.category?.toUpperCase(),
+      contentType: item.contentType || 'goods',
+      images: item.images || [],
+      status: item.status || 'active',
+      removeReason: item.removeReason || null,
+      authorId: item.author?.toString() || null,
+      likes: item.likes?.length || 0,
+      commentsCount: item.comments?.length || 0,
+      createdAt: item.createdAt?.getTime() || Date.now()
+    })));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // 检查当前用户是否为管理员
 router.get('/check', auth, async (req, res) => {
   const user = await User.findById(req.userId);

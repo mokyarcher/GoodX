@@ -41,7 +41,7 @@ data class VersionInfo(val version: String, val versionCode: Int, val apkUrl: St
 data class AdminCheckResponse(val isAdmin: Boolean)
 data class AdminUser(val id: String, val username: String, val nickname: String?, val isAdmin: Boolean, val banned: Boolean, val createdAt: Long)
 data class AdminUpdateRequest(val nickname: String? = null, val password: String? = null, val banned: Boolean? = null)
-data class AdminPost(val id: String, val title: String, val description: String?, val category: String?, val contentType: String?, val images: List<String>?, val status: String, val removeReason: String?, val likes: Int, val commentsCount: Int, val createdAt: Long)
+data class AdminPost(val id: String, val title: String, val description: String?, val category: String?, val contentType: String?, val images: List<String>?, val status: String, val removeReason: String?, val authorId: String? = null, val likes: Int, val commentsCount: Int, val createdAt: Long)
 data class UnreadCountResponse(val count: Int)
 data class AppNotification(val id: String, val type: String, val title: String, val message: String, val relatedPostId: String?, val extra: String?, val read: Boolean, val createdAt: Long)
 data class NotificationListResponse(val notifications: List<AppNotification>, val total: Int, val unread: Int)
@@ -114,6 +114,9 @@ interface ApiService {
 
     @DELETE("api/admin/users/{id}")
     suspend fun adminDeleteUser(@Path("id") id: String): Response<Unit>
+
+    @GET("api/admin/all-posts")
+    suspend fun getAdminAllPosts(): Response<List<AdminPost>>
 
     @GET("api/admin/users/{id}/posts")
     suspend fun getAdminUserPosts(@Path("id") id: String): Response<List<AdminPost>>

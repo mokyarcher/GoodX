@@ -26,6 +26,92 @@ import team.sharex.goodx.ui.theme.TextPrimary
 import team.sharex.goodx.ui.theme.TextSecondary
 
 @Composable
+fun AdminAllPostsScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
+
+    var posts by remember { mutableStateOf<List<AdminPost>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var showRemoveDialog by remember { mutableStateOf<AdminPost?>(null) }
+    var removeReason by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+
+    fun load() {
+        scope.launch {
+            isLoading = true
+            try {
+                val r = RetrofitClient.apiService.getAdminAllPosts()
+                if (r.isSuccessful) posts = r.body() ?: emptyList()
+            } catch (_: Exception) {}
+            isLoading = false
+        }
+    }
+
+    LaunchedEffect(Unit) { load() }
+
+    Column(modifier = Modifier.fillMaxSize().background(Background)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onBack, colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)) { Text("返回", fontSize = 14.sp) }
+            Text("全部帖子", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.width(48.dp))
+        }
+
+        if (isLoading) Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Accent) }
+        else LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            val pendingPosts = posts.filter { it.status == "pending_review" }
+            val activePosts = posts.filter { it.status == "active" }
+            val removedPosts = posts.filter { it.status == "removed" }
+
+            if (pendingPosts.isNotEmpty()) {
+                item { Text("⏳ 待审核 (${pendingPosts.size})", color = Accent, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 4.dp)) }
+                items(pendingPosts, key = { it.id }) { post -> AllPostCard(post, "pending", scope, { load() }, { showRemoveDialog = it }) }
+            }
+            item { Text("✓ 已发布 (${activePosts.size})", color = TextSecondary, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 4.dp)) }
+            items(activePosts, key = { it.id }) { post -> AllPostCard(post, "active", scope, { load() }, { showRemoveDialog = it }) }
+            if (removedPosts.isNotEmpty()) {
+                item { Text("⚠️ 已下架 (${removedPosts.size})", color = LikeRed, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 4.dp)) }
+                items(removedPosts, key = { it.id }) { post -> AllPostCard(post, "removed", scope, { load() }, { showRemoveDialog = it }) }
+            }
+        }
+    }
+
+    showRemoveDialog?.let { post ->
+        AlertDialog(
+            onDismissRequest = { showRemoveDialog = null; removeReason = "" },
+            containerColor = Surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.padding(horizontal = 24.dp),
+            title = { Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Text("下架帖子", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp) } },
+            text = { Column { Text("「${post.title}」", color = TextPrimary, fontSize = 14.sp); Spacer(modifier = Modifier.height(12.dp)); OutlinedTextField(value = removeReason, onValueChange = { removeReason = it }, label = { Text("下架理由") }, minLines = 2, colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Accent, unfocusedBorderColor = TextSecondary.copy(alpha = 0.2f)), modifier = Modifier.fillMaxWidth()) } },
+            confirmButton = { TextButton(onClick = { if (removeReason.isBlank()) return@TextButton; scope.launch { try { RetrofitClient.apiService.adminRemovePost(post.id, mapOf("reason" to removeReason)); showRemoveDialog = null; removeReason = ""; load() } catch (_: Exception) {} } }, colors = ButtonDefaults.textButtonColors(contentColor = LikeRed)) { Text("确认下架") } },
+            dismissButton = { TextButton(onClick = { showRemoveDialog = null; removeReason = "" }, colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)) { Text("取消") } }
+        )
+    }
+}
+
+@Composable
+private fun AllPostCard(post: AdminPost, type: String, scope: kotlinx.coroutines.CoroutineScope, onReload: () -> Unit, onRemove: (AdminPost) -> Unit) {
+    Card(colors = CardDefaults.cardColors(containerColor = Surface), shape = RoundedCornerShape(12.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(post.title, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+                    Row { Text(post.category ?: "", color = Accent, fontSize = 11.sp); if (post.status == "pending_review") Text(" · 待审核", color = Accent, fontSize = 11.sp); if (post.status == "removed") Text(" · ⚠️", color = LikeRed, fontSize = 11.sp); if (post.authorId == null) Text(" · 用户已删除", color = TextSecondary, fontSize = 10.sp) }
+                }
+            }
+            post.removeReason?.takeIf { it.isNotBlank() }?.let { Text("下架理由：$it", color = LikeRed.copy(alpha = 0.7f), fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp)) }
+            Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                when (type) {
+                    "active" -> TextButton(onClick = { onRemove(post) }, colors = ButtonDefaults.textButtonColors(contentColor = LikeRed)) { Text("下架", fontSize = 12.sp) }
+                    "pending" -> {
+                        TextButton(onClick = { scope.launch { try { RetrofitClient.apiService.adminApprovePost(post.id); onReload() } catch (_: Exception) {} } }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("通过", fontSize = 12.sp) }
+                        TextButton(onClick = { scope.launch { try { RetrofitClient.apiService.adminRejectPost(post.id); onReload() } catch (_: Exception) {} } }, colors = ButtonDefaults.textButtonColors(contentColor = LikeRed)) { Text("拒绝", fontSize = 12.sp) }
+                    }
+                }
+                TextButton(onClick = { scope.launch { try { RetrofitClient.apiService.adminDeletePost(post.id); onReload() } catch (_: Exception) {} } }, colors = ButtonDefaults.textButtonColors(contentColor = LikeRed)) { Text("删除", fontSize = 12.sp) }
+            }
+        }
+    }
+}
+
+@Composable
 fun AdminUserPostsScreen(
     user: AdminUser,
     onBack: () -> Unit,
