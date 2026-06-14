@@ -205,7 +205,7 @@ fun EditGoodItemScreen(
 
             // 标题
             OutlinedTextField(
-                value = title, onValueChange = { title = it; error = null },
+                value = title, onValueChange = { if (it.length <= 10) { title = it; error = null } },
                 placeholder = { Text("标题", color = TextSecondary.copy(alpha = 0.5f)) }, singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Accent, unfocusedBorderColor = TextSecondary.copy(alpha = 0.2f), focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary),
                 modifier = Modifier.fillMaxWidth()
@@ -214,7 +214,7 @@ fun EditGoodItemScreen(
 
             // 描述
             OutlinedTextField(
-                value = description, onValueChange = { description = it },
+                value = description, onValueChange = { if (it.length <= 500) description = it },
                 placeholder = { Text("描述", color = TextSecondary.copy(alpha = 0.5f)) },
                 minLines = 4, maxLines = 8,
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Accent, unfocusedBorderColor = TextSecondary.copy(alpha = 0.2f), focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary),

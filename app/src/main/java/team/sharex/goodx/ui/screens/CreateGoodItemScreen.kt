@@ -284,11 +284,12 @@ fun CreateGoodItemScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 标题输入
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it; error = null },
-                placeholder = { Text(selectedContentType.titlePlaceholder(), color = TextSecondary.copy(alpha = 0.5f)) },
-                singleLine = true,
+            Column {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { if (it.length <= 10) { title = it; error = null } },
+                    placeholder = { Text(selectedContentType.titlePlaceholder(), color = TextSecondary.copy(alpha = 0.5f)) },
+                    singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Accent,
                     unfocusedBorderColor = androidx.compose.ui.graphics.Color.Transparent,
@@ -298,14 +299,17 @@ fun CreateGoodItemScreen(
                     unfocusedContainerColor = Surface
                 ),
                 modifier = Modifier.fillMaxWidth()
-            )
+                )
+                Text("${title.length}/10", color = TextSecondary.copy(alpha = 0.5f), fontSize = 11.sp, modifier = Modifier.align(Alignment.End))
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             // 正文输入
-            OutlinedTextField(
-                value = content,
-                onValueChange = { content = it },
+            Column {
+                OutlinedTextField(
+                    value = content,
+                    onValueChange = { if (it.length <= 500) content = it },
                 placeholder = { Text(selectedContentType.contentPlaceholder(), color = TextSecondary.copy(alpha = 0.5f)) },
                 minLines = 6,
                 maxLines = 12,
@@ -318,7 +322,9 @@ fun CreateGoodItemScreen(
                     unfocusedContainerColor = Surface
                 ),
                 modifier = Modifier.fillMaxWidth()
-            )
+                )
+                Text("${content.length}/500", color = TextSecondary.copy(alpha = 0.5f), fontSize = 11.sp, modifier = Modifier.align(Alignment.End))
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
