@@ -274,7 +274,7 @@ fun AllCategoriesTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier 
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             ContentType.values().forEach { type ->
                 val selected = selectedType == type
-                Box(modifier = Modifier.weight(1f).height(38.dp).background(if (selected) Accent.copy(alpha = 0.14f) else Color.Transparent, RoundedCornerShape(10.dp)).clickable { selectedType = if (selected) null else type }, contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.weight(1f).height(38.dp).clip(RoundedCornerShape(10.dp)).background(if (selected) Accent.copy(alpha = 0.14f) else Color.Transparent).clickable { selectedType = if (selected) null else type }, contentAlignment = Alignment.Center) {
                     Text(type.displayName(), color = if (selected) Accent else TextSecondary, fontSize = 14.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
                 }
             }
