@@ -95,7 +95,12 @@ fun CreateGoodItemScreen(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri>? ->
         uris?.let {
-            selectedImages = it
+            if (it.size > 20) {
+                error = "最多选择20张图片"
+                selectedImages = it.take(20)
+            } else {
+                selectedImages = it
+            }
             scope.launch {
                 isUploading = true
                 val urls = mutableListOf<String>()

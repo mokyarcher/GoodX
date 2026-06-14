@@ -91,7 +91,18 @@ fun EditGoodItemScreen(
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
-    ) { uris -> uris?.let { newImageUris = it; isUploading = true } }
+    ) { uris ->
+        uris?.let {
+            val totalAfter = currentImages.size + it.size
+            if (totalAfter > 20) {
+                error = "图片最多20张，已截取前${20 - currentImages.size}张"
+                newImageUris = it.take(20 - currentImages.size)
+            } else {
+                newImageUris = it
+            }
+            isUploading = true
+        }
+    }
 
     // 上传新图片
     LaunchedEffect(isUploading) {
@@ -192,10 +203,11 @@ fun EditGoodItemScreen(
                 item {
                     Box(
                         modifier = Modifier.size(100.dp).background(TextSecondary.copy(alpha = 0.05f))
-                            .clickable(enabled = !isUploading) { imagePicker.launch("image/*") },
+                            .clickable(enabled = !isUploading && currentImages.size < 20) { imagePicker.launch("image/*") },
                         contentAlignment = Alignment.Center
                     ) {
                         if (isUploading) CircularProgressIndicator(color = Accent, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                        else if (currentImages.size >= 20) Text("已满", color = TextSecondary, fontSize = 13.sp)
                         else Text("+", color = TextSecondary, fontSize = 32.sp)
                     }
                 }
