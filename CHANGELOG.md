@@ -445,3 +445,108 @@ GoodX 原先以 8 个基础品类承载所有内容，随着定位扩展，需�
 - `:app:compileDebugKotlin` 通过数十轮
 - `:app:assembleDebug` 多次线上部署验证
 - OPPO Android 16 + 联想平板 Android 15 兼容通过
+
+---
+
+## 2026-06-14：0.6.x / 0.7.x 体验修复与恢复记录
+
+### 背景
+
+一次误操作将 `HomeScreen.kt` 回退到早期状态，随后完整重建主要 UI 功能。此后必须严格遵守：改动前确认仓库、改动后立即 commit，禁止无 commit 的破坏性恢复命令。
+
+### 内容
+
+#### 首页与导航
+
+- 重建 `HomeScreen.kt`：恢复发现页、全部页、圈子页、我的页
+- 底部导航恢复为：发现 / 全部 / + / 圈子 / 我的
+- 底部导航支持左右滑动切换，并修复点击 tab 时滑动中间页导致卡住的问题
+- 发现页标题高度、字号与粗细多轮调整
+- 发现页刷新最终采用稳定的 `↻` 按钮方案；下拉刷新方案暂缓，因为 nestedScroll 与 LazyColumn 组合体验不稳定
+
+#### 全部页
+
+- 取消“大类 → 细分类 → 信息流”的复杂路径
+- 改为“全部页直接信息流 + 顶部大类筛选”
+- 默认选中“好物”
+- 好物 / 此刻 / 文娱 筛选状态使用 `rememberSaveable` 保留，切换底部导航后不丢失
+- 筛选按钮点击波纹裁剪为圆角
+
+#### 发布 / 编辑限制
+
+- 发布页和编辑页标题限制 10 字
+- 正文限制 500 字
+- 图片最多 20 张
+- 分批选图改为追加，不再覆盖上一批
+- 超过 20 张自动截取并提示
+
+#### 图片查看
+
+- 详情页主图支持左右滑动切图
+- 全屏原图查看支持左右滑动切图
+- 原图层手势冲突修复：未缩放时允许 pager 滑动，放大后才处理拖拽缩放
+
+#### 管理员后台
+
+- 新增“全部帖子管理”，可处理已删除用户遗留帖子
+- 后台管理页按原型改为：顶部主 Tab（用户 / 帖子）
+- 用户 Tab 子筛选：全部 / 封禁 / 注销（注销先占位）
+- 帖子 Tab 子筛选：所有 / 匿名用户 / 已下架
+
+#### 评论与互动
+
+- 评论区新增评论点赞
+- 评论未点赞状态视觉优化，空心心形更淡、更紧凑
+
+#### 冷启动与缓存
+
+- 新增 SplashScreen
+- Splash 阶段预拉发现页数据、用户信息、未读数，并预热首屏缩略图
+- RetrofitClient 增加 20MB OkHttp 磁盘缓存
+- 发现页优先读内存缓存，减少冷启动后首屏卡顿
+
+#### 在线更新机制
+
+- 最终稳定方案：HttpURLConnection 直连下载 + FileProvider + ACTION_VIEW 安装
+- 禁用 HttpURLConnection 缓存：`useCaches = false` + `Cache-Control: no-cache, no-store`
+- 每次下载使用唯一文件名，避免 FileProvider / 系统安装器 URI 缓存旧包
+- 发现 Gradle Configuration Cache 会导致 versionCode 未更新，发布时必须禁用配置缓存并 clean build
+
+### 发布注意事项
+
+发布 APK 必须使用：
+
+```bash
+rm -rf .gradle/configuration-cache
+JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" \
+./gradlew :app:clean :app:assembleDebug --no-configuration-cache
+```
+
+否则可能出现线上版本接口已更新，但 APK 实际 versionCode 未变的问题。
+
+### 验证
+
+- 多轮 `:app:compileDebugKotlin --no-configuration-cache` 通过
+- 多轮 `:app:assembleDebug --no-configuration-cache` 通过
+- OPPO Android 16 和联想平板 Android 15 均已验证在线更新可连续成功
+
+---
+
+## 2026-06-15：切换新服务器地址
+
+### 背景
+
+旧服务器 `124.223.50.79:3002` 即将过期，GoodX 后端测试/线上地址切换到新服务器 `111.229.166.216:3002`。
+
+### 内容
+
+- Android API `BASE_URL` 切换到新服务器
+- 修复图片加载仍写死旧服务器 IP 的问题，图片地址统一跟随 `RetrofitClient.BASE_URL`
+- 服务端 `/api/version` 的 `apkUrl` 切换到新服务器地址
+- `agent.md` 当前技术事实同步更新为新服务器
+
+### 验证
+
+- 新服务器 `/health`、`/api/version`、`/api/good-items` 冒烟测试通过
+- 新服务器 `/uploads`、`/api/upload/thumb`、`/api/upload/preview` 图片接口测试通过
+- `:app:compileDebugKotlin --no-configuration-cache` 通过
