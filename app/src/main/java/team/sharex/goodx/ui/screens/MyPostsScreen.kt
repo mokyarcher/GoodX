@@ -34,7 +34,7 @@ import team.sharex.goodx.ui.theme.Surface
 import team.sharex.goodx.ui.theme.TextPrimary
 import team.sharex.goodx.ui.theme.TextSecondary
 
-private const val GOODX_BASE_URL = "http://124.223.50.79:3002"
+private val GOODX_BASE_URL = RetrofitClient.BASE_URL.removeSuffix("/")
 
 private fun originalImageUrl(path: String): String =
     if (path.startsWith("http")) path else "$GOODX_BASE_URL$path"

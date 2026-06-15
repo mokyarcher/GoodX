@@ -25,7 +25,7 @@ import team.sharex.goodx.data.remote.TokenManager
 import team.sharex.goodx.ui.theme.Accent
 import team.sharex.goodx.ui.theme.Background
 
-private const val GOODX_BASE_URL = "http://124.223.50.79:3002"
+private val GOODX_BASE_URL = RetrofitClient.BASE_URL.removeSuffix("/")
 
 @Composable
 fun SplashScreen(onReady: () -> Unit) {

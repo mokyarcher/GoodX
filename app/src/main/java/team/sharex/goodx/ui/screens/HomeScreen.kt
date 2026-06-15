@@ -68,7 +68,7 @@ import team.sharex.goodx.ui.theme.TextSecondary
 import team.sharex.goodx.ui.theme.TextTertiary
 import java.io.File
 
-private const val GOODX_BASE_URL = "http://124.223.50.79:3002"
+private val GOODX_BASE_URL = RetrofitClient.BASE_URL.removeSuffix("/")
 
 private fun thumbnailImageUrl(path: String): String {
     if (path.startsWith("http")) return path
