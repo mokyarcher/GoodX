@@ -575,6 +575,7 @@ private fun FullscreenImageViewer(
             val imagePath = images[page]
             var originalReady by remember(imagePath) { mutableStateOf(false) }
             var previewReady by remember(imagePath) { mutableStateOf(false) }
+            var thumbnailReady by remember(imagePath) { mutableStateOf(false) }
             var imageScale by remember(imagePath) { mutableStateOf(1f) }
             var imageOffsetX by remember(imagePath) { mutableStateOf(0f) }
             var imageOffsetY by remember(imagePath) { mutableStateOf(0f) }
@@ -588,7 +589,8 @@ private fun FullscreenImageViewer(
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(thumbnailImageUrl(imagePath)).crossfade(80).scale(Scale.FIT)
-                                .memoryCacheKey("detail-thumb:$imagePath:180").diskCacheKey("detail-thumb:$imagePath:180").build(),
+                                .memoryCacheKey("detail-thumb:$imagePath:180").diskCacheKey("detail-thumb:$imagePath:180")
+                                .listener(onSuccess = { _, _ -> thumbnailReady = true }).build(),
                             contentDescription = null, modifier = Modifier.fillMaxSize(),
                             contentScale = androidx.compose.ui.layout.ContentScale.Fit
                         )
@@ -597,7 +599,7 @@ private fun FullscreenImageViewer(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(previewImageUrl(imagePath)).crossfade(160).scale(Scale.FIT)
                             .memoryCacheKey("detail-preview:$imagePath:1280").diskCacheKey("detail-preview:$imagePath:1280")
-                            .listener(onSuccess = { _, _ -> previewReady = true }).build(),
+                            .listener(onStart = { thumbnailReady = true }, onSuccess = { _, _ -> previewReady = true }).build(),
                         contentDescription = null, modifier = Modifier.fillMaxSize(),
                         contentScale = androidx.compose.ui.layout.ContentScale.Fit
                     )
@@ -625,7 +627,7 @@ private fun FullscreenImageViewer(
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit
                 )
 
-                if (!originalReady) {
+                if (!originalReady && !previewReady && !thumbnailReady) {
                     Box(
                         modifier = Modifier.align(Alignment.Center).size(54.dp)
                             .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.34f), RoundedCornerShape(27.dp)),
