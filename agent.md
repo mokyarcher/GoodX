@@ -229,7 +229,7 @@ node --check server/routes/goodItems.js
 - 图片使用 Coil
 - 后端使用 Node.js + Express + MongoDB
 - 图片处理使用 Sharp
-- 线上服务器：`124.223.50.79:3002`
+- 线上服务器：`111.229.166.216:3002`
 - 后端进程：`goodx-api`
 
 ---

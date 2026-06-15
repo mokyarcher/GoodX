@@ -41,7 +41,7 @@ app.get('/api/version', (req, res) => {
   res.json({
     version: '0.7.2',
     versionCode: 56,
-    apkUrl: 'http://124.223.50.79:3002/apk/goodx.apk?v=34',
+    apkUrl: 'http://111.229.166.216:3002/apk/goodx.apk?v=34',
     note: '审核中帖子锁定编辑、通知跳转快捷整改'
   });
 });
