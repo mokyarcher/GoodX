@@ -32,7 +32,7 @@ GoodX 当前是一个 **全品类值得分享内容 App**，一级内容类型�
 
 ## 开发行为准则
 
-### 1. 不主动打包 APK
+### 1. 不主动打包 APK / 发布 APK
 
 除非用户明确要求：
 
@@ -93,7 +93,13 @@ server/models/
 
 实现时优先保持兼容旧数据：旧的 `category/subCategory` 不要直接废弃，应逐步映射到新结构。新增字段建议使用 `contentType` 表示一级类型，保留 `category` 表示细分品类。
 
-### 5. 图片加载策略
+### 5. UI / 交互经验
+
+- 发现页下拉刷新暂时不要再强行做 nestedScroll 版本；当前稳定方案是标题栏 `↻` 按钮。此前 nestedScroll + LazyColumn 出现卡住圆圈、体验差的问题。
+- 全部页不再使用“大卡片大类 → 细分品类”的层级，当前采用：顶部标题 + 大类筛选栏 + 帖子流。
+- 后台管理按原型使用：主 Tab（用户 / 帖子）+ 子 Tab。
+
+### 6. 图片加载策略
 
 GoodX 图片使用分级加载：
 
@@ -107,7 +113,7 @@ GoodX 图片使用分级加载：
 
 避免无脑在列表或详情首屏加载原图。图片保存不要使用系统 DownloadManager 通知，优先在 App 内静默下载并通过 MediaStore 保存到相册。
 
-### 6. 服务端变更要考虑部署
+### 7. 服务端变更要考虑部署
 
 服务端线上目录：
 
@@ -128,7 +134,7 @@ goodx-api
 pm2 status goodx-api
 ```
 
-### 7. 每次改动后必须 Git Commit
+### 8. 每次改动后必须 Git Commit
 
 **每次完成一个独立功能或修复后，立即在 GoodX 独立仓库 commit：**
 
@@ -149,15 +155,15 @@ GoodX 为独立 Git 仓库，**不要操作父级 GameWorld 仓库**。
 远程: git@github.com:mokyarcher/GoodX.git (SSH)
 ```
 
-### 8. 不覆盖用户已有改动
+### 9. 不覆盖用户已有改动
 
 项目当前存在较多未提交改动。修改文件前先读取目标文件。不要做无关格式化，不要大范围重写。
 
-### 9. 回复格式
+### 10. 回复格式
 
 每次最终回复（非工具调用、非中间过程）的第一行必须以 **大哥** 开头。
 
-### 10. 记录重要变更
+### 11. 记录重要变更
 
 完成较大功能、架构调整、体验优化后，应更新 `changelog.md`。不用写过细，但要能看懂：
 
@@ -176,16 +182,19 @@ GoodX 为独立 Git 仓库，**不要操作父级 GameWorld 仓库**。
 JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" \
 /c/Users/Moky/myproject/apps/android/apps/goodx/gradlew \
 -p /c/Users/Moky/myproject/apps/android/apps/goodx \
-:app:compileDebugKotlin
+:app:compileDebugKotlin --no-configuration-cache
 ```
 
-### Debug APK 打包（仅用户要求时）
+### Debug APK 打包 / 发布（仅用户要求时）
+
+**发布必须 clean + 禁用配置缓存，否则 versionCode 可能不更新：**
 
 ```bash
+rm -rf /c/Users/Moky/myproject/apps/android/apps/goodx/.gradle/configuration-cache && \
 JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" \
 /c/Users/Moky/myproject/apps/android/apps/goodx/gradlew \
 -p /c/Users/Moky/myproject/apps/android/apps/goodx \
-:app:assembleDebug
+:app:clean :app:assembleDebug --no-configuration-cache
 ```
 
 APK 输出：
