@@ -11,8 +11,8 @@ import java.io.File
 
 object RetrofitClient {
     // AVD 模拟器用 10.0.2.2 访问本机
-    // 真机测试时改为服务器地址: http://124.223.50.79:3002/
-    const val BASE_URL = "http://124.223.50.79:3002/"
+    // 真机测试时改为服务器地址: http://111.229.166.216:3002/
+    const val BASE_URL = "http://111.229.166.216:3002/"
     private const val CACHE_SIZE = 20L * 1024 * 1024 // 20MB OkHttp cache
 
     // 内存数据缓存（Splash 预加载共享给 DiscoverTab）
