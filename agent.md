@@ -176,6 +176,16 @@ GoodX 为独立 Git 仓库，**不要操作父级 GameWorld 仓库**。
 
 ## 常用命令
 
+### 固定 Build / Verify 工作流
+
+GoodX 默认采用轻量验证，避免无意义打包浪费时间和 token：
+
+1. Android / Kotlin / Compose 改动：默认只运行 `:app:compileDebugKotlin --no-configuration-cache`。
+2. 服务端 JS 改动：优先运行对应文件的 `node --check`，例如 `server/routes/admin.js`。
+3. Retrofit / API 联动改动：Android 快速编译 + 服务端相关路由 `node --check`。
+4. Gradle / Manifest / res 资源改动：可按需升级到更完整的 Debug 构建，但先说明原因。
+5. 不主动运行 `assembleDebug`、不主动生成 APK、不主动安装；只有用户明确说“打包 / 生成 APK / assembleDebug / 装手机”才执行。
+
 ### Kotlin 编译检查
 
 ```bash
