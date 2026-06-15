@@ -406,6 +406,8 @@ fun ImageCarousel(images: List<String>) {
         // 主图显示区：支持左右滑动切图
         HorizontalPager(
             state = pagerState,
+            beyondViewportPageCount = 1,
+            key = { images[it] },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(280.dp)
@@ -571,7 +573,7 @@ private fun FullscreenImageViewer(
                 .fillMaxSize()
                 .background(androidx.compose.ui.graphics.Color.Black)
         ) {
-        HorizontalPager(state = pagerState, userScrollEnabled = true, modifier = Modifier.fillMaxSize()) { page ->
+        HorizontalPager(state = pagerState, beyondViewportPageCount = 1, key = { images[it] }, userScrollEnabled = true, modifier = Modifier.fillMaxSize()) { page ->
             val imagePath = images[page]
             var originalReady by remember(imagePath) { mutableStateOf(false) }
             var previewReady by remember(imagePath) { mutableStateOf(false) }
