@@ -59,7 +59,7 @@ async function ensureThumbnail(filename) {
       position: 'centre',
       withoutEnlargement: true
     })
-    .webp({ quality: 76, effort: 4 })
+    .webp({ quality: 76, effort: 2 })
     .toFile(targetPath);
 
   return targetPath;
@@ -91,7 +91,7 @@ async function ensurePreview(filename) {
       fit: 'inside',
       withoutEnlargement: true
     })
-    .webp({ quality: 86, effort: 4 })
+    .webp({ quality: 86, effort: 2 })
     .toFile(targetPath);
 
   return targetPath;
@@ -183,11 +183,11 @@ router.post('/image', upload.single('image'), handleUploadError, async (req, res
       return res.status(400).json({ message: '没有上传文件' });
     }
 
-    // 上传时先生成常用压缩图；历史图片仍可通过接口按需生成。
-    await Promise.all([
+    // 上传时后台异步生成压缩图，不阻塞响应；首次访问 thumb/preview 接口时也会按需生成。
+    Promise.all([
       ensureThumbnail(req.file.filename).catch(() => null),
       ensurePreview(req.file.filename).catch(() => null)
-    ]);
+    ]).catch(() => {});
 
     const fileUrl = `/uploads/${req.file.filename}`;
     const thumbnailUrl = `/api/upload/thumb/${req.file.filename}`;
@@ -211,10 +211,10 @@ router.post('/images', upload.array('images', 5), handleUploadError, async (req,
       return res.status(400).json({ message: '没有上传文件' });
     }
 
-    await Promise.all(req.files.flatMap(file => [
+    Promise.all(req.files.flatMap(file => [
       ensureThumbnail(file.filename).catch(() => null),
       ensurePreview(file.filename).catch(() => null)
-    ]));
+    ])).catch(() => {});
 
     const urls = req.files.map(file => `/uploads/${file.filename}`);
     const thumbnailUrls = req.files.map(file => `/api/upload/thumb/${file.filename}`);
