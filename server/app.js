@@ -39,9 +39,9 @@ app.use('/apk', express.static('/opt/projects/download-site/public/download'));
 // 版本检查（用于 App 内更新）
 app.get('/api/version', (req, res) => {
   res.json({
-    version: '0.7.3',
-    versionCode: 57,
-    apkUrl: 'http://111.229.166.216:3002/apk/goodx.apk?v=57',
+    version: '0.7.4',
+    versionCode: 58,
+    apkUrl: 'http://111.229.166.216:3002/apk/goodx.apk?v=58',
     note: '审核中帖子锁定编辑、通知跳转快捷整改'
   });
 });

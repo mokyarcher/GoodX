@@ -6,6 +6,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -189,31 +190,26 @@ fun AppNavigation() {
                 else -> false
             }
 
-            // 从发布页返回Home时，只做淡入淡出，避免标题漂移感
-            val isReturnToHome = targetState is Screen.Home && (
-                initialState is Screen.CreateGoodItem ||
-                initialState is Screen.EditProfile ||
-                initialState is Screen.Admin ||
-                initialState is Screen.GoodItemDetail ||
-                initialState is Screen.Notifications ||
-                initialState is Screen.MyPosts ||
-                initialState is Screen.EditGoodItem ||
-                initialState is Screen.ContentTypePosts ||
-                initialState is Screen.CategoryDetail
-            )
-
-            if (isReturnToHome) {
-                fadeIn(animationSpec = tween(160), initialAlpha = 0.0f) togetherWith
-                fadeOut(animationSpec = tween(120), targetAlpha = 0.0f)
-            } else if (isForward) {
-                // 进入详情时只做小幅滑入 + 快速淡入，减少大面积位移带来的掉帧感。
-                fadeIn(animationSpec = tween(150), initialAlpha = 0.0f) +
-                slideInHorizontally(initialOffsetX = { it / 5 }, animationSpec = tween(180)) togetherWith
-                fadeOut(animationSpec = tween(120), targetAlpha = 0.72f)
+            if (isForward) {
+                // 进入新页面：从右侧横向滑入；旧页面保持原位轻微左移退出，制造层次感
+                slideInHorizontally(
+                    initialOffsetX = { it },
+                    animationSpec = tween(260, easing = FastOutSlowInEasing)
+                ) togetherWith
+                slideOutHorizontally(
+                    targetOffsetX = { -it / 5 },
+                    animationSpec = tween(260, easing = FastOutSlowInEasing)
+                )
             } else {
-                fadeIn(animationSpec = tween(150), initialAlpha = 0.0f) +
-                slideInHorizontally(initialOffsetX = { -it / 5 }, animationSpec = tween(180)) togetherWith
-                fadeOut(animationSpec = tween(120), targetAlpha = 0.72f)
+                // 返回：新页面从左侧横向滑入；旧页面右移退出
+                slideInHorizontally(
+                    initialOffsetX = { -it / 5 },
+                    animationSpec = tween(260, easing = FastOutSlowInEasing)
+                ) togetherWith
+                slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(260, easing = FastOutSlowInEasing)
+                )
             }
         },
         label = "screen_transition"
