@@ -552,6 +552,23 @@ JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" \
 
 ---
 
+## 2026-06-17：GoodX v0.7.4 发布
+
+### 内容
+
+- 版本号升级到 `0.7.4`（versionCode 58）
+- 优化页面过渡动画：去掉淡入淡出与纵向偏移，改为纯横向左右滑动
+- 全屏图片查看器去掉"原图"按钮，恢复打开后自动加载原图
+- 重新打包 APK 并部署到下载站
+
+### 验证
+
+- `:app:clean :app:assembleDebug --no-configuration-cache` 通过
+- 服务器 `/api/version` 返回 `0.7.4` / `versionCode: 58`
+- APK 已部署，下载站版本信息已更新
+
+---
+
 ## 2026-06-15：切换新服务器地址
 
 ### 背景
