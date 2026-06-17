@@ -532,6 +532,26 @@ JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" \
 
 ---
 
+## 2026-06-17：GoodX v0.7.3 发布
+
+### 内容
+
+- 版本号升级到 `0.7.3`（versionCode 57）
+- 配置 Coil 共享 ImageLoader，加大磁盘/内存缓存与网络超时
+- 全屏图片查看器不再默认加载 20MB 原图，改为点击"原图"按钮才加载
+- 详情页图片加载失败时先重试一次，再回退原图
+- 服务端上传接口改为后台异步生成缩略图，避免上传栏卡灰
+- 重新打包 APK 并部署到下载站
+
+### 验证
+
+- `:app:clean :app:assembleDebug --no-configuration-cache` 通过
+- 服务器 `/api/version` 返回 `0.7.3` / `versionCode: 57`
+- APK 已部署到 `/opt/projects/download-site/public/download/goodx.apk`
+- 下载站首页已更新 GoodX 版本信息
+
+---
+
 ## 2026-06-15：切换新服务器地址
 
 ### 背景
