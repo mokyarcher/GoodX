@@ -15,8 +15,6 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -539,39 +537,6 @@ fun ImageCarousel(images: List<String>) {
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium
                     )
-                }
-            }
-        }
-
-        // 缩略图列表
-        if (images.size > 1) {
-            Spacer(modifier = Modifier.height(8.dp))
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(images.size) { index ->
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(TextSecondary.copy(alpha = 0.1f))
-                            .clickable { selectedIndex = index }
-                            .then(
-                                if (index == selectedIndex) {
-                                    Modifier.border(2.dp, Accent, RoundedCornerShape(8.dp))
-                                } else {
-                                    Modifier
-                                }
-                            )
-                    ) {
-                        DetailCompressedImage(
-                            imagePath = images[index],
-                            modifier = Modifier.fillMaxSize(),
-                            size = 180,
-                            usePreview = false
-                        )
-                    }
                 }
             }
         }
