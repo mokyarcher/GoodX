@@ -166,6 +166,15 @@ fun GoodItemDetailScreen(
                     }
                 }
 
+                // 图片与正文分隔线
+                item {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        thickness = 0.5.dp,
+                        color = TextSecondary.copy(alpha = 0.12f)
+                    )
+                }
+
                 // 标题和分类
                 item {
                     Column {
@@ -282,6 +291,15 @@ fun GoodItemDetailScreen(
                                 }
                             }
                         }
+                    )
+                }
+
+                // 正文与评论分隔线
+                item {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        thickness = 0.5.dp,
+                        color = TextSecondary.copy(alpha = 0.12f)
                     )
                 }
 
@@ -551,9 +569,6 @@ private fun FullscreenImageViewer(
     val pagerState = rememberPagerState(pageCount = { images.size }, initialPage = initialIndex.coerceIn(0, images.lastIndex))
     val selectedIndex = pagerState.currentPage
     val context = LocalContext.current
-    // 当前查看器内已请求加载原图的图片集合
-    val requestedOriginals = remember { mutableStateListOf<String>() }
-    requestedOriginals.addAll(originalLoaded)
 
     LaunchedEffect(pagerState.currentPage) {
         onIndexChanged(pagerState.currentPage)
@@ -573,7 +588,6 @@ private fun FullscreenImageViewer(
         HorizontalPager(state = pagerState, beyondViewportPageCount = 1, key = { images[it] }, userScrollEnabled = true, modifier = Modifier.fillMaxSize()) { page ->
             val imagePath = images[page]
             var originalReady by remember(imagePath) { mutableStateOf(false) }
-            val originalRequested = requestedOriginals.contains(imagePath)
             var previewReady by remember(imagePath) { mutableStateOf(false) }
             var thumbnailReady by remember(imagePath) { mutableStateOf(false) }
             var imageScale by remember(imagePath) { mutableStateOf(1f) }
@@ -608,44 +622,31 @@ private fun FullscreenImageViewer(
                     )
                 }
 
-                // 原图：仅在用户主动请求后加载
-                if (originalRequested) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(originalImageUrl(imagePath)).crossfade(false).scale(Scale.FIT)
-                            .memoryCacheKey("viewer-original:$imagePath").diskCacheKey("viewer-original:$imagePath").build(),
-                        onSuccess = { originalReady = true; onOriginalLoaded(imagePath) },
-                        onError = { originalReady = false },
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize()
-                            .graphicsLayer { scaleX = imageScale; scaleY = imageScale; translationX = imageOffsetX; translationY = imageOffsetY }
-                            .pointerInput(originalReady, imageScale) {
-                                if (originalReady && imageScale > 1.01f) {
-                                    detectTransformGestures { _, pan, zoom, _ ->
-                                        val ns = (imageScale * zoom).coerceIn(1f, 5f)
-                                        imageScale = ns
-                                        if (ns <= 1.01f) { imageScale = 1f; imageOffsetX = 0f; imageOffsetY = 0f }
-                                        else { imageOffsetX += pan.x; imageOffsetY += pan.y }
-                                    }
+                // 原图自动加载，成功显示后覆盖 preview
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(originalImageUrl(imagePath)).crossfade(false).scale(Scale.FIT)
+                        .memoryCacheKey("viewer-original:$imagePath").diskCacheKey("viewer-original:$imagePath").build(),
+                    onSuccess = { originalReady = true; onOriginalLoaded(imagePath) },
+                    onError = { originalReady = false },
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize()
+                        .graphicsLayer { scaleX = imageScale; scaleY = imageScale; translationX = imageOffsetX; translationY = imageOffsetY }
+                        .pointerInput(originalReady, imageScale) {
+                            if (originalReady && imageScale > 1.01f) {
+                                detectTransformGestures { _, pan, zoom, _ ->
+                                    val ns = (imageScale * zoom).coerceIn(1f, 5f)
+                                    imageScale = ns
+                                    if (ns <= 1.01f) { imageScale = 1f; imageOffsetX = 0f; imageOffsetY = 0f }
+                                    else { imageOffsetX += pan.x; imageOffsetY += pan.y }
                                 }
-                            },
-                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
-                    )
-                }
+                            }
+                        },
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                )
 
                 // 加载指示器：只在预览/缩略/原图都未就绪时显示
                 if (!originalReady && !previewReady && !thumbnailReady) {
-                    Box(
-                        modifier = Modifier.align(Alignment.Center).size(54.dp)
-                            .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.34f), RoundedCornerShape(27.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = androidx.compose.ui.graphics.Color.White, strokeWidth = 2.5.dp, modifier = Modifier.size(28.dp))
-                    }
-                }
-
-                // 原图加载中指示器
-                if (originalRequested && !originalReady) {
                     Box(
                         modifier = Modifier.align(Alignment.Center).size(54.dp)
                             .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.34f), RoundedCornerShape(27.dp)),
@@ -673,7 +674,7 @@ private fun FullscreenImageViewer(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .padding(start = 24.dp, end = 24.dp, bottom = 36.dp),
+                .padding(start = 42.dp, end = 42.dp, bottom = 36.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -683,21 +684,7 @@ private fun FullscreenImageViewer(
                 onClick = { downloadOriginalImage(context, images[pagerState.currentPage]) }
             )
 
-            // 查看原图按钮：未加载原图时显示，加载成功后隐藏
-            if (!originalLoaded.contains(images[pagerState.currentPage]) && !requestedOriginals.contains(images[pagerState.currentPage])) {
-                ViewerOutlineButton(
-                    text = "原图",
-                    minWidth = 40.dp,
-                    onClick = {
-                        val currentPath = images[pagerState.currentPage]
-                        requestedOriginals.add(currentPath)
-                        viewedOriginalImages.add(currentPath)
-                        onOriginalLoaded(currentPath)
-                    }
-                )
-            } else {
-                Spacer(modifier = Modifier.width(40.dp))
-            }
+            Spacer(modifier = Modifier.width(88.dp))
 
             ViewerOutlineButton(
                 text = "${selectedIndex + 1} / ${images.size}",
