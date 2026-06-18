@@ -176,7 +176,7 @@ router.post('/:id/like', auth, async (req, res) => {
 // 评论
 router.post('/:id/comment', auth, async (req, res) => {
   try {
-    const { content } = req.body;
+    const { content, parentId } = req.body;
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ message: '评论内容不能为空' });
     }
@@ -186,9 +186,18 @@ router.post('/:id/comment', auth, async (req, res) => {
       return res.status(404).json({ message: '好物不存在' });
     }
 
+    // 如果指定了 parentId，验证父评论存在
+    if (parentId) {
+      const parentComment = goodItem.comments.id(parentId);
+      if (!parentComment) {
+        return res.status(404).json({ message: '回复的评论不存在' });
+      }
+    }
+
     goodItem.comments.push({
       user: req.userId,
-      content: content.trim()
+      content: content.trim(),
+      parentId: parentId || null
     });
 
     await goodItem.save();
@@ -341,22 +350,45 @@ function formatGoodItem(item) {
     likes: item.likes.length,
     likedBy: item.likes.map(id => id.toString()),
     latestInteraction: latestInteraction(item),
-    comments: item.comments.map(c => ({
-      id: c._id.toString(),
-      content: c.content,
-      likesCount: c.likes?.length || 0,
-      likedByMe: false, // 由客户端决定
-      createdAt: c.createdAt?.getTime() || Date.now(),
-      user: c.user ? {
-        id: c.user._id?.toString(),
-        username: c.user.username,
-        nickname: c.user.nickname,
-        avatar: c.user.avatar
-      } : null
-    })),
+    comments: buildCommentTree(item.comments),
     commentsCount: item.comments.length,
     createdAt: item.createdAt?.getTime() || Date.now()
   };
+}
+
+function buildCommentTree(comments) {
+  const all = comments.map(c => ({
+    id: c._id.toString(),
+    content: c.content,
+    likesCount: c.likes?.length || 0,
+    likedByMe: false,
+    parentId: c.parentId ? c.parentId.toString() : null,
+    createdAt: c.createdAt?.getTime() || Date.now(),
+    user: c.user ? {
+      id: c.user._id?.toString(),
+      username: c.user.username,
+      nickname: c.user.nickname,
+      avatar: c.user.avatar
+    } : null,
+    replies: []
+  }));
+
+  const map = new Map();
+  all.forEach(c => map.set(c.id, c));
+
+  const roots = [];
+  all.forEach(c => {
+    if (c.parentId && map.has(c.parentId)) {
+      map.get(c.parentId).replies.push(c);
+    } else {
+      roots.push(c);
+    }
+  });
+
+  // 按时间排序回复
+  roots.forEach(c => c.replies.sort((a, b) => a.createdAt - b.createdAt));
+
+  return roots;
 }
 
 module.exports = router;

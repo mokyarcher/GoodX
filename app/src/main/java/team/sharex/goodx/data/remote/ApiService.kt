@@ -34,7 +34,10 @@ data class UpdateGoodItemRequest(
 
 data class ChangePasswordRequest(val oldPassword: String, val newPassword: String)
 data class UpdateProfileRequest(val nickname: String? = null, val avatar: String? = null)
-data class CommentRequest(val content: String)
+data class CommentRequest(
+    val content: String,
+    val parentId: String? = null
+)
 
 // ========== Upload ==========
 data class VersionInfo(val version: String, val versionCode: Int, val apkUrl: String, val note: String)

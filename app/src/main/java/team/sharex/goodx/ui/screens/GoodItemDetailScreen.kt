@@ -90,6 +90,9 @@ fun GoodItemDetailScreen(
     var isLoading by remember(itemId) { mutableStateOf(item == null) }
     var commentText by remember { mutableStateOf("") }
     var isSending by remember { mutableStateOf(false) }
+    var replyTarget by remember { mutableStateOf<Comment?>(null) }
+    var replyText by remember { mutableStateOf("") }
+    var isSendingReply by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     fun loadDetail() {
@@ -327,17 +330,98 @@ fun GoodItemDetailScreen(
                     items(comments) { comment ->
                         CommentItem(
                             comment = comment,
-                            onLike = {
+                            onLike = { commentId ->
                                 scope.launch {
                                     try {
-                                        val r = RetrofitClient.apiService.likeComment(goodItem.id, comment.id ?: "")
+                                        val r = RetrofitClient.apiService.likeComment(goodItem.id, commentId)
                                         if (r.isSuccessful) item = r.body()
                                     } catch (_: Exception) { }
                                 }
-                            }
+                            },
+                            onReply = { replyTarget = it }
                         )
                     }
                 }
+            }
+
+            // 回复评论弹窗
+            if (replyTarget != null) {
+                AlertDialog(
+                    onDismissRequest = { replyTarget = null; replyText = "" },
+                    containerColor = Surface,
+                    shape = RoundedCornerShape(20.dp),
+                    title = {
+                        Text(
+                            text = "回复 ${replyTarget?.user?.nickname ?: replyTarget?.user?.username ?: "匿名"}",
+                            color = TextPrimary,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    text = {
+                        OutlinedTextField(
+                            value = replyText,
+                            onValueChange = { replyText = it },
+                            placeholder = { Text("写回复...", color = TextSecondary, fontSize = 14.sp) },
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Accent,
+                                unfocusedBorderColor = TextSecondary.copy(alpha = 0.2f),
+                                focusedTextColor = TextPrimary,
+                                unfocusedTextColor = TextPrimary
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                if (replyText.isBlank()) return@Button
+                                scope.launch {
+                                    isSendingReply = true
+                                    try {
+                                        val response = RetrofitClient.apiService.addComment(
+                                            id = goodItem.id,
+                                            request = CommentRequest(
+                                                content = replyText.trim(),
+                                                parentId = replyTarget?.id
+                                            )
+                                        )
+                                        if (response.isSuccessful) {
+                                            replyText = ""
+                                            replyTarget = null
+                                            item = response.body()
+                                        }
+                                    } catch (e: Exception) {
+                                        // ignore
+                                    }
+                                    isSendingReply = false
+                                }
+                            },
+                            enabled = !isSendingReply && replyText.isNotBlank(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Accent),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            if (isSendingReply) {
+                                CircularProgressIndicator(
+                                    color = TextPrimary,
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text("发送", fontSize = 13.sp)
+                            }
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { replyTarget = null; replyText = "" },
+                            colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)
+                        ) {
+                            Text("取消", fontSize = 14.sp)
+                        }
+                    }
+                )
             }
 
             // 底部评论输入
@@ -831,12 +915,25 @@ fun LikeSection(
 }
 
 @Composable
-fun CommentItem(comment: Comment, onLike: () -> Unit = {}) {
+fun CommentItem(
+    comment: Comment,
+    onLike: (String) -> Unit = {},
+    onReply: (Comment) -> Unit = {},
+    isReply: Boolean = false
+) {
+    val commentId = comment.id.orEmpty()
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(Surface)
-            .padding(12.dp)
+            .padding(
+                start = if (isReply) 32.dp else 12.dp,
+                end = 12.dp,
+                top = if (isReply) 6.dp else 8.dp,
+                bottom = if (isReply) 6.dp else 8.dp
+            )
+            .clickable { onReply(comment) }
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -846,7 +943,7 @@ fun CommentItem(comment: Comment, onLike: () -> Unit = {}) {
             Text(
                 text = comment.user?.nickname ?: comment.user?.username ?: "匿名用户",
                 color = TextPrimary,
-                fontSize = 13.sp,
+                fontSize = if (isReply) 12.sp else 13.sp,
                 fontWeight = FontWeight.Medium
             )
             Text(
@@ -860,12 +957,12 @@ fun CommentItem(comment: Comment, onLike: () -> Unit = {}) {
             Text(
                 text = comment.content.orEmpty(),
                 color = TextSecondary,
-                fontSize = 13.sp,
+                fontSize = if (isReply) 12.sp else 13.sp,
                 modifier = Modifier.weight(1f)
             )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable { onLike() }
+                modifier = Modifier.clickable { onLike(commentId) }
             ) {
                 Text(
                     text = if (comment.likesCount > 0) "♥" else "♡",
@@ -878,5 +975,15 @@ fun CommentItem(comment: Comment, onLike: () -> Unit = {}) {
                 }
             }
         }
+    }
+
+    // 渲染嵌套回复（只展示一层缩进，回复的回复仍挂在同一父评论下）
+    comment.replies?.forEach { reply ->
+        CommentItem(
+            comment = reply,
+            onLike = onLike,
+            onReply = { onReply(comment) },
+            isReply = true
+        )
     }
 }
