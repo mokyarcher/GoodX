@@ -587,3 +587,34 @@ JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" \
 - 新服务器 `/health`、`/api/version`、`/api/good-items` 冒烟测试通过
 - 新服务器 `/uploads`、`/api/upload/thumb`、`/api/upload/preview` 图片接口测试通过
 - `:app:compileDebugKotlin --no-configuration-cache` 通过
+
+---
+
+## 2026-06-18：发现页分页加载
+
+### 背景
+
+发现页原先一次性拉取全部帖子，数据量增长后首屏加载慢、浪费流量。用户要求发现页与「全部页」做业务区隔：发现页是「最新流」，首屏只拉最新 30 条，下滑再逐步加载。
+
+### 内容
+
+- `HomeScreen.kt` 的 `DiscoverTab` 改为分页加载：
+  - 首屏 `page=1, limit=30`
+  - 触底后自动加载下一页 `page++, limit=20`
+  - 使用 `rememberLazyListState` + `derivedStateOf` 检测接近底部（剩余 3 项时触发）
+  - 新增底部 footer：加载中 / 加载失败重试 / 没有更多了
+  - 保留标题栏 `↻` 刷新按钮，点击后重置到第一页
+  - 初始加载失败时显示全屏错误 + 重试按钮
+- `SplashScreen.kt` 预加载 `limit` 从 20 改为 30，与发现页首屏保持一致，减少重复请求
+- 服务端无需改动，复用已有 `page`/`limit` 参数
+
+### 注意事项
+
+- 未引入 Paging 3，保持项目依赖轻量
+- 未改动「全部页」`AllCategoriesTab` 的筛选逻辑，两个 Tab 业务独立
+- 未做下拉刷新，继续沿用稳定的标题栏 `↻` 按钮方案
+
+### 验证
+
+- `:app:compileDebugKotlin --no-configuration-cache` 通过
+- Git commit `969aa07` 已提交到 GoodX 独立仓库
