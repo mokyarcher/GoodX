@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -307,48 +306,21 @@ fun GoodItemDetailScreen(
                     )
                 }
 
-                // 评论列表
+                // 评论区域：统一卡片容器
                 item {
-                    Text(
-                        text = "评论 (${goodItem.commentsCount})",
-                        color = TextPrimary,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                    CommentSection(
+                        comments = goodItem.comments.orEmpty(),
+                        commentsCount = goodItem.commentsCount,
+                        onLike = { commentId ->
+                            scope.launch {
+                                try {
+                                    val r = RetrofitClient.apiService.likeComment(goodItem.id, commentId)
+                                    if (r.isSuccessful) item = r.body()
+                                } catch (_: Exception) { }
+                            }
+                        },
+                        onReply = { replyTarget = it }
                     )
-                }
-
-                val comments = goodItem.comments.orEmpty()
-                if (comments.isEmpty()) {
-                    item {
-                        Text(
-                            text = "暂无评论，来说两句吧",
-                            color = TextSecondary.copy(alpha = 0.7f),
-                            fontSize = 13.sp,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
-                } else {
-                    itemsIndexed(comments) { index, comment ->
-                        CommentItem(
-                            comment = comment,
-                            onLike = { commentId ->
-                                scope.launch {
-                                    try {
-                                        val r = RetrofitClient.apiService.likeComment(goodItem.id, commentId)
-                                        if (r.isSuccessful) item = r.body()
-                                    } catch (_: Exception) { }
-                                }
-                            },
-                            onReply = { replyTarget = it }
-                        )
-                        if (index < comments.lastIndex) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(start = 58.dp, end = 12.dp),
-                                thickness = 0.5.dp,
-                                color = TextSecondary.copy(alpha = 0.08f)
-                            )
-                        }
-                    }
                 }
             }
 
@@ -923,6 +895,53 @@ fun LikeSection(
 }
 
 @Composable
+fun CommentSection(
+    comments: List<Comment>,
+    commentsCount: Int,
+    onLike: (String) -> Unit,
+    onReply: (Comment) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
+            Text(
+                text = "评论 ($commentsCount)",
+                color = TextPrimary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            if (comments.isEmpty()) {
+                Text(
+                    text = "暂无评论，来说两句吧",
+                    color = TextSecondary.copy(alpha = 0.7f),
+                    fontSize = 13.sp
+                )
+            } else {
+                comments.forEachIndexed { index, comment ->
+                    CommentItem(
+                        comment = comment,
+                        onLike = onLike,
+                        onReply = onReply
+                    )
+                    if (index < comments.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 48.dp, top = 6.dp, bottom = 6.dp),
+                            thickness = 0.5.dp,
+                            color = TextSecondary.copy(alpha = 0.08f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun CommentItem(
     comment: Comment,
     parentComment: Comment? = null,
@@ -936,18 +955,17 @@ fun CommentItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Surface)
             .padding(
-                start = if (isReply) 44.dp else 12.dp,
-                end = 12.dp,
-                top = if (isReply) 6.dp else 10.dp,
-                bottom = if (isReply) 6.dp else 10.dp
+                start = if (isReply) 32.dp else 0.dp,
+                end = 0.dp,
+                top = if (isReply) 4.dp else 6.dp,
+                bottom = if (isReply) 4.dp else 6.dp
             )
             .clickable { onReply(comment) },
         verticalAlignment = Alignment.Top
     ) {
         // 头像
-        val avatarSize = if (isReply) 28.dp else 36.dp
+        val avatarSize = if (isReply) 26.dp else 36.dp
         val avatarUrl = comment.user?.avatar
         Box(
             modifier = Modifier
@@ -1018,7 +1036,7 @@ fun CommentItem(
                 )
             }
 
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             Text(
                 text = comment.content.orEmpty(),
@@ -1027,7 +1045,7 @@ fun CommentItem(
                 lineHeight = 18.sp
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(3.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
