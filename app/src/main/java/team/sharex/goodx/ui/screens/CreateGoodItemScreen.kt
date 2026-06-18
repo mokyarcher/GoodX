@@ -138,6 +138,39 @@ fun CreateGoodItemScreen(
             .fillMaxSize()
             .background(Background)
     ) {
+        val publish: () -> Unit = {
+            if (title.isBlank()) {
+                error = "请填写${selectedContentType.displayName()}标题"
+            } else {
+                scope.launch {
+                    isPublishing = true
+                    error = null
+                    try {
+                        val response = RetrofitClient.apiService.createGoodItem(
+                            CreateGoodItemRequest(
+                                title = title,
+                                description = content,
+                                contentType = selectedContentType.name,
+                                category = selectedCategory.name,
+                                subCategory = platform.takeIf { it.isNotBlank() },
+                                images = uploadedImageUrls
+                            )
+                        )
+                        if (response.isSuccessful) {
+                            android.widget.Toast.makeText(context, "✓ 发布成功！", android.widget.Toast.LENGTH_SHORT).show()
+                            onPublished()
+                            return@launch
+                        } else {
+                            error = "发布失败: ${response.errorMessage()}"
+                        }
+                    } catch (_: Exception) {
+                        error = "网络错误，点击重试"
+                    }
+                    isPublishing = false
+                }
+            }
+        }
+
         // Top Bar
         Row(
             modifier = Modifier
@@ -158,39 +191,9 @@ fun CreateGoodItemScreen(
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
+
             Button(
-                onClick = {
-                    if (title.isBlank()) {
-                        error = "请填写${selectedContentType.displayName()}标题"
-                        return@Button
-                    }
-                    scope.launch {
-                        isPublishing = true
-                        error = null
-                        try {
-                            val response = RetrofitClient.apiService.createGoodItem(
-                                CreateGoodItemRequest(
-                                    title = title,
-                                    description = content,
-                                    contentType = selectedContentType.name,
-                                    category = selectedCategory.name,
-                                    subCategory = platform.takeIf { it.isNotBlank() },
-                                    images = uploadedImageUrls
-                                )
-                            )
-                            if (response.isSuccessful) {
-                                android.widget.Toast.makeText(context, "✓ 发布成功！", android.widget.Toast.LENGTH_SHORT).show()
-                                onPublished()
-                                return@launch
-                            } else {
-                                error = "发布失败: ${response.errorMessage()}"
-                            }
-                        } catch (e: Exception) {
-                            error = "网络错误: ${e.message}"
-                        }
-                        isPublishing = false
-                    }
-                },
+                onClick = publish,
                 enabled = !isPublishing && !isUploading,
                 colors = ButtonDefaults.buttonColors(containerColor = Accent),
                 shape = RoundedCornerShape(0.dp)
@@ -205,7 +208,9 @@ fun CreateGoodItemScreen(
                 text = error!!,
                 color = Accent,
                 fontSize = 13.sp,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .then(if (error == "网络错误，点击重试") Modifier.clickable { publish() } else Modifier)
             )
         }
 

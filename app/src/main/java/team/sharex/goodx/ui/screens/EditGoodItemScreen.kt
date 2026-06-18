@@ -127,6 +127,33 @@ fun EditGoodItemScreen(
     Column(
         modifier = Modifier.fillMaxSize().background(Background)
     ) {
+        val save: () -> Unit = {
+            if (title.isBlank()) { error = "请填写标题" }
+            else if (!hasChanges) { error = "未做任何修改" }
+            else {
+                scope.launch {
+                    isSaving = true; error = null
+                    try {
+                        val resp = RetrofitClient.apiService.updateGoodItem(
+                            id = goodItem.id,
+                            request = UpdateGoodItemRequest(
+                                title = title,
+                                description = description,
+                                contentType = goodItem.contentType.name,
+                                category = selectedCategory.name,
+                                subCategory = platform.takeIf { it.isNotBlank() },
+                                images = currentImages
+                            )
+                        )
+                        if (resp.isSuccessful) {
+                            onUpdated()
+                        } else error = "保存失败: ${resp.errorMessage()}"
+                    } catch (_: Exception) { error = "网络错误，点击重试" }
+                    isSaving = false
+                }
+            }
+        }
+
         // Top Bar
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 32.dp, bottom = 8.dp),
@@ -137,31 +164,9 @@ fun EditGoodItemScreen(
                 Text("取消", fontSize = 14.sp)
             }
             Text("编辑内容", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+
             Button(
-                onClick = {
-                    if (title.isBlank()) { error = "请填写标题"; return@Button }
-                    if (!hasChanges) { error = "未做任何修改"; return@Button }
-                    scope.launch {
-                        isSaving = true; error = null
-                        try {
-                            val resp = RetrofitClient.apiService.updateGoodItem(
-                                id = goodItem.id,
-                                request = UpdateGoodItemRequest(
-                                    title = title,
-                                    description = description,
-                                    contentType = goodItem.contentType.name,
-                                    category = selectedCategory.name,
-                                    subCategory = platform.takeIf { it.isNotBlank() },
-                                    images = currentImages
-                                )
-                            )
-                            if (resp.isSuccessful) {
-                                onUpdated()
-                            } else error = "保存失败: ${resp.errorMessage()}"
-                        } catch (e: Exception) { error = "网络错误: ${e.message}" }
-                        isSaving = false
-                    }
-                },
+                onClick = save,
                 enabled = !isSaving && !isUploading,
                 colors = ButtonDefaults.buttonColors(containerColor = Accent),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(0.dp)
@@ -169,7 +174,14 @@ fun EditGoodItemScreen(
         }
 
         if (error != null) {
-            Text(error!!, color = Accent, fontSize = 13.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+            Text(
+                text = error!!,
+                color = Accent,
+                fontSize = 13.sp,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .then(if (error == "网络错误，点击重试") Modifier.clickable { save() } else Modifier)
+            )
         }
 
         Column(
