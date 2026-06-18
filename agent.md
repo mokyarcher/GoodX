@@ -105,11 +105,10 @@ GoodX 图片使用分级加载：
 
 - 列表：缩略图
 - 详情：预览图
-- 全屏默认：预览图，必要时用缩略图兜底，避免黑屏
-- 用户主动点击：原图
+- 全屏默认：预览图，必要时用缩略图兜底；全屏打开后自动加载原图，成功后覆盖 preview
 - 原图加载中：保留压缩图兜底，并显示居中加载圆圈
 - 原图加载成功：隐藏压缩图层，只显示原图，避免叠加错位
-- 同次 App 运行内已成功查看过原图的图片，再次进入全屏时直接按原图状态处理，不再显示“查看原图”按钮
+- 同次 App 运行内已成功查看过原图的图片，再次进入全屏时直接按原图状态处理
 
 避免无脑在列表或详情首屏加载原图。图片保存不要使用系统 DownloadManager 通知，优先在 App 内静默下载并通过 MediaStore 保存到相册。
 
@@ -197,10 +196,12 @@ JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" \
 
 ### Debug APK 打包 / 发布（仅用户要求时）
 
-**发布必须 clean + 禁用配置缓存，否则 versionCode 可能不更新：**
+**发布必须彻底清理缓存 + 禁用配置缓存，否则 versionCode 可能不更新：**
 
 ```bash
-rm -rf /c/Users/Moky/myproject/apps/android/apps/goodx/.gradle/configuration-cache && \
+rm -rf /c/Users/Moky/myproject/apps/android/apps/goodx/.gradle \
+  /c/Users/Moky/myproject/apps/android/apps/goodx/app/build \
+  /c/Users/Moky/myproject/apps/android/apps/goodx/build && \
 JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" \
 /c/Users/Moky/myproject/apps/android/apps/goodx/gradlew \
 -p /c/Users/Moky/myproject/apps/android/apps/goodx \
@@ -213,6 +214,28 @@ APK 输出：
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
+### 发布检查清单（必须逐项确认）
+
+1. **验证 APK 内部真实版本**
+   - 不要只看 `app/build.gradle.kts`，必须读取 `AndroidManifest.xml` 确认 `versionCode` 和 `versionName`
+   - 可用项目脚本：`python scripts/check_apk_version.py app/build/outputs/apk/debug/app-debug.apk`
+   - 确认输出与目标版本一致后再继续
+
+2. **使用唯一文件名部署**
+   - 每个版本的 APK 文件名必须不同，例如 `goodx-v59.apk`
+   - 禁止复用 `goodx.apk`，避免 ColorOS / FileProvider / 系统安装器缓存旧包
+   - `/api/version` 的 `apkUrl` 必须指向带版本号的文件名，例如：
+     ```text
+     http://111.229.166.216:3002/apk/goodx/goodx-v59.apk?v=59
+     ```
+
+3. **部署后验证**
+   - 服务器 `/api/version` 返回的 `version`、`versionCode`、`apkUrl` 正确
+   - 下载站 `https://www.sharex.team/download/goodx/` 版本信息已更新
+   - `pm2 status goodx-api` / `pm2 status download-site` 状态正常
+
+**历史教训：** 2026-06-18 发布 v0.7.5 时，因只清除了 `configuration-cache` 且沿用 `goodx.apk` 文件名，导致用户更新后系统提示「已安装相同版本 0.7.4」。后续发布必须严格执行本清单。
+
 ### 服务端语法检查
 
 ```bash
@@ -224,13 +247,16 @@ node --check server/routes/goodItems.js
 
 ## 当前技术事实
 
+- 当前最新版本：`0.7.5`（versionCode 59）
 - Android 使用 Kotlin + Compose + Material3
 - 网络使用 Retrofit + OkHttp
-- 图片使用 Coil
+- 图片使用 Coil（`GoodXApplication` 配置共享 ImageLoader，100MB OkHttp 缓存 + 200MB Coil 磁盘缓存）
 - 后端使用 Node.js + Express + MongoDB
 - 图片处理使用 Sharp
 - 线上服务器：`111.229.166.216:3002`
+- 下载站：`http://sharex.team/`（Nginx 反代到 localhost:3001）
 - 后端进程：`goodx-api`
+- 下载站进程：`download-site`
 
 ---
 
