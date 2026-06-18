@@ -922,10 +922,10 @@ fun CommentSection(
                 LiquidGlassCard(
                     modifier = Modifier.fillMaxWidth(),
                     cornerRadius = 16.dp,
-                    blurRadius = 20.dp,
-                    tintColor = Color.White.copy(alpha = 0.25f),
-                    accentColor = Accent,
-                    borderAlpha = 0.35f
+                    blurRadius = 8.dp,
+                    tintColor = Color.White.copy(alpha = 0.10f),
+                    accentColor = Accent.copy(alpha = 0.15f),
+                    borderAlpha = 0.18f
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
                         CommentItem(
