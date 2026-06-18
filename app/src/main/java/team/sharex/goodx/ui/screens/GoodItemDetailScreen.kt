@@ -170,8 +170,8 @@ fun GoodItemDetailScreen(
                 item {
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 4.dp),
-                        thickness = 0.5.dp,
-                        color = TextSecondary.copy(alpha = 0.12f)
+                        thickness = 0.8.dp,
+                        color = TextSecondary.copy(alpha = 0.15f)
                     )
                 }
 
@@ -298,8 +298,8 @@ fun GoodItemDetailScreen(
                 item {
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 4.dp),
-                        thickness = 0.5.dp,
-                        color = TextSecondary.copy(alpha = 0.12f)
+                        thickness = 0.8.dp,
+                        color = TextSecondary.copy(alpha = 0.15f)
                     )
                 }
 
