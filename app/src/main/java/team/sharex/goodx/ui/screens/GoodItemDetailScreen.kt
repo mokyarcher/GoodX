@@ -21,8 +21,11 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.vector.ImageVector
 import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
@@ -876,27 +880,63 @@ fun LikeSection(
     onLikeToggle: () -> Unit
 ) {
     val isLiked = !item.likedBy.isNullOrEmpty()
+    val context = LocalContext.current
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.clickable { onLikeToggle() }
-        ) {
-            Text(
-                text = if (isLiked) "❤️" else "🤍",
-                fontSize = 32.sp
-            )
-            Text(
-                text = "${item.likes}",
-                color = TextSecondary,
-                fontSize = 13.sp,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
+        InteractionButton(
+            icon = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+            label = "${item.likes}",
+            tint = if (isLiked) LikeRed else TextSecondary.copy(alpha = 0.7f),
+            onClick = onLikeToggle
+        )
+        InteractionButton(
+            icon = Icons.Outlined.BookmarkBorder,
+            label = "收藏",
+            tint = TextSecondary.copy(alpha = 0.7f),
+            onClick = { Toast.makeText(context, "收藏功能开发中", Toast.LENGTH_SHORT).show() }
+        )
+        InteractionButton(
+            icon = Icons.Outlined.Share,
+            label = "转发",
+            tint = TextSecondary.copy(alpha = 0.7f),
+            onClick = { Toast.makeText(context, "转发功能开发中", Toast.LENGTH_SHORT).show() }
+        )
+    }
+}
+
+@Composable
+private fun InteractionButton(
+    icon: ImageVector,
+    label: String,
+    tint: Color,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = onClick
+        )
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(22.dp)
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = label,
+            color = tint,
+            fontSize = 12.sp
+        )
     }
 }
 
