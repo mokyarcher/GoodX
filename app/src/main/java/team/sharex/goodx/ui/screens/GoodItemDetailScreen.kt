@@ -1040,7 +1040,7 @@ fun CommentItem(
 
             Text(
                 text = comment.content.orEmpty(),
-                color = TextSecondary,
+                color = TextPrimary,
                 fontSize = if (isReply) 12.sp else 13.sp,
                 lineHeight = 18.sp
             )
