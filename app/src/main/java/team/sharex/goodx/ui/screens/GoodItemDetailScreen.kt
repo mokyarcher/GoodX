@@ -901,40 +901,47 @@ fun CommentSection(
     onLike: (String) -> Unit,
     onReply: (Comment) -> Unit
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
+    Column {
+        Text(
+            text = "评论 ($commentsCount)",
+            color = TextPrimary,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        if (comments.isEmpty()) {
             Text(
-                text = "评论 ($commentsCount)",
-                color = TextPrimary,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                text = "暂无评论，来说两句吧",
+                color = TextSecondary.copy(alpha = 0.7f),
+                fontSize = 13.sp
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            if (comments.isEmpty()) {
-                Text(
-                    text = "暂无评论，来说两句吧",
-                    color = TextSecondary.copy(alpha = 0.7f),
-                    fontSize = 13.sp
-                )
-            } else {
-                comments.forEachIndexed { index, comment ->
-                    CommentItem(
-                        comment = comment,
-                        onLike = onLike,
-                        onReply = onReply
-                    )
-                    if (index < comments.lastIndex) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 48.dp, top = 6.dp, bottom = 6.dp),
-                            thickness = 0.5.dp,
-                            color = TextSecondary.copy(alpha = 0.08f)
+        } else {
+            comments.forEachIndexed { index, comment ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
+                        CommentItem(
+                            comment = comment,
+                            onLike = onLike,
+                            onReply = onReply
                         )
+                        comment.replies?.forEach { reply ->
+                            CommentItem(
+                                comment = reply,
+                                parentComment = comment,
+                                onLike = onLike,
+                                onReply = { onReply(comment) },
+                                isReply = true
+                            )
+                        }
                     }
+                }
+                if (index < comments.lastIndex) {
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
             }
         }
