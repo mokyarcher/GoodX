@@ -918,7 +918,7 @@ fun FrostedGlassCard(
             .clip(shape)
             .background(backgroundColor.copy(alpha = backgroundAlpha), shape)
             .border(
-                width = 0.8.dp,
+                width = 1.0.dp,
                 color = borderColor.copy(alpha = borderAlpha),
                 shape = shape
             ),
