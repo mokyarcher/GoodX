@@ -25,6 +25,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -48,6 +49,7 @@ import team.sharex.goodx.data.remote.errorMessage
 import team.sharex.goodx.model.Comment
 import team.sharex.goodx.model.GoodItem
 import team.sharex.goodx.model.displayName
+import team.sharex.goodx.ui.components.LiquidGlassCard
 import team.sharex.goodx.ui.theme.Accent
 import team.sharex.goodx.ui.theme.Background
 import team.sharex.goodx.ui.theme.LikeRed
@@ -917,11 +919,13 @@ fun CommentSection(
             )
         } else {
             comments.forEachIndexed { index, comment ->
-                Card(
+                LiquidGlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    cornerRadius = 16.dp,
+                    blurRadius = 20.dp,
+                    tintColor = Color.White.copy(alpha = 0.25f),
+                    accentColor = Accent,
+                    borderAlpha = 0.35f
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
                         CommentItem(
