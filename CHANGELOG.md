@@ -644,3 +644,18 @@ JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" \
 - 服务器 `/api/version` 返回 `0.7.5` / `versionCode: 59` / `apkUrl` 指向 `goodx-v59.apk`
 - 下载站已重新生成：`https://www.sharex.team/download/goodx/`
 - Git commit `c84dbce` 已提交到 GoodX 独立仓库
+
+---
+
+## 2026-06-18：发布/编辑网络错误提示优化
+
+### 内容
+
+- `CreateGoodItemScreen.kt` 发布时捕获网络异常不再显示 `e.message`（避免暴露服务器 IP）
+- 统一显示为「网络错误，点击重试」，点击错误文案可直接重试发布
+- `EditGoodItemScreen.kt` 保存时同步处理，避免同样问题
+
+### 验证
+
+- `:app:compileDebugKotlin --no-configuration-cache` 通过
+- Git commit `1a5c49b` 已提交到 GoodX 独立仓库
