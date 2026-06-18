@@ -40,7 +40,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
@@ -420,20 +423,38 @@ fun GoodItemDetailScreen(
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                OutlinedTextField(
+                var isInputFocused by remember { mutableStateOf(false) }
+                BasicTextField(
                     value = commentText,
                     onValueChange = { commentText = it },
-                    placeholder = { Text("写评论...", color = TextSecondary, fontSize = 13.sp) },
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Accent,
-                        unfocusedBorderColor = TextSecondary.copy(alpha = 0.2f),
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
-                    ),
                     modifier = Modifier
                         .weight(1f)
-                        .defaultMinSize(minHeight = 44.dp)
+                        .height(44.dp)
+                        .onFocusChanged { isInputFocused = it.isFocused },
+                    singleLine = true,
+                    textStyle = TextStyle(color = TextPrimary, fontSize = 13.sp),
+                    decorationBox = { innerTextField ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isInputFocused) Accent else TextSecondary.copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .padding(horizontal = 12.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (commentText.isEmpty()) {
+                                Text(
+                                    text = "写评论...",
+                                    color = TextSecondary,
+                                    fontSize = 13.sp
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(
