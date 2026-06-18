@@ -618,3 +618,12 @@ JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" \
 
 - `:app:compileDebugKotlin --no-configuration-cache` 通过
 - Git commit `969aa07` 已提交到 GoodX 独立仓库
+
+### 发布
+
+- 版本号升级到 `0.7.5`（versionCode 59）
+- 重新打包 APK 并部署到下载站
+- `/api/version` 返回 `0.7.5` / `versionCode: 59`
+- APK 已部署到 `/opt/projects/download-site/public/download/goodx/goodx.apk`（13.9M）
+- 下载站首页已更新：`https://www.sharex.team/download/goodx/`
+- Git commit `720210b` 已提交到 GoodX 独立仓库
