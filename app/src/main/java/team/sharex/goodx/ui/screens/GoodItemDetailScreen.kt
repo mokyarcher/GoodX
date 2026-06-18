@@ -933,15 +933,6 @@ fun CommentSection(
                             onLike = onLike,
                             onReply = onReply
                         )
-                        comment.replies?.forEach { reply ->
-                            CommentItem(
-                                comment = reply,
-                                parentComment = comment,
-                                onLike = onLike,
-                                onReply = { onReply(comment) },
-                                isReply = true
-                            )
-                        }
                     }
                 }
                 if (index < comments.lastIndex) {
