@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -327,7 +328,7 @@ fun GoodItemDetailScreen(
                         )
                     }
                 } else {
-                    items(comments) { comment ->
+                    itemsIndexed(comments) { index, comment ->
                         CommentItem(
                             comment = comment,
                             onLike = { commentId ->
@@ -340,6 +341,13 @@ fun GoodItemDetailScreen(
                             },
                             onReply = { replyTarget = it }
                         )
+                        if (index < comments.lastIndex) {
+                            HorizontalDivider(
+                                modifier = Modifier.padding(start = 58.dp, end = 12.dp),
+                                thickness = 0.5.dp,
+                                color = TextSecondary.copy(alpha = 0.08f)
+                            )
+                        }
                     }
                 }
             }
@@ -917,70 +925,160 @@ fun LikeSection(
 @Composable
 fun CommentItem(
     comment: Comment,
+    parentComment: Comment? = null,
     onLike: (String) -> Unit = {},
     onReply: (Comment) -> Unit = {},
     isReply: Boolean = false
 ) {
     val commentId = comment.id.orEmpty()
+    val context = LocalContext.current
 
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Surface)
             .padding(
-                start = if (isReply) 32.dp else 12.dp,
+                start = if (isReply) 44.dp else 12.dp,
                 end = 12.dp,
-                top = if (isReply) 6.dp else 8.dp,
-                bottom = if (isReply) 6.dp else 8.dp
+                top = if (isReply) 6.dp else 10.dp,
+                bottom = if (isReply) 6.dp else 10.dp
             )
-            .clickable { onReply(comment) }
+            .clickable { onReply(comment) },
+        verticalAlignment = Alignment.Top
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        // 头像
+        val avatarSize = if (isReply) 28.dp else 36.dp
+        val avatarUrl = comment.user?.avatar
+        Box(
+            modifier = Modifier
+                .size(avatarSize)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(TextSecondary.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = comment.user?.nickname ?: comment.user?.username ?: "匿名用户",
-                color = TextPrimary,
-                fontSize = if (isReply) 12.sp else 13.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = formatTimeAgo(comment.createdAt),
-                color = TextSecondary.copy(alpha = 0.5f),
-                fontSize = 11.sp
-            )
+            if (!avatarUrl.isNullOrBlank()) {
+                val avatarThumbUrl = if (avatarUrl.startsWith("http")) avatarUrl
+                else "$GOODX_BASE_URL/api/upload/thumb/${avatarUrl.substringAfterLast('/')}"
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(avatarThumbUrl)
+                        .size(72, 72)
+                        .scale(Scale.FIT)
+                        .crossfade(80)
+                        .memoryCacheKey("avatar-thumb:$avatarUrl")
+                        .diskCacheKey("avatar-thumb:$avatarUrl")
+                        .build(),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = (comment.user?.nickname ?: comment.user?.username ?: "?").first().uppercase(),
+                    color = Accent,
+                    fontSize = if (isReply) 10.sp else 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        // 中间内容
+        Column(modifier = Modifier.weight(1f)) {
+            // 昵称行：回复显示「回复者 ▶ 被回复者」
+            if (isReply && parentComment != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = comment.user?.nickname ?: comment.user?.username ?: "匿名",
+                        color = TextPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "▶",
+                        color = Accent.copy(alpha = 0.8f),
+                        fontSize = 9.sp
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = parentComment.user?.nickname ?: parentComment.user?.username ?: "匿名",
+                        color = Accent.copy(alpha = 0.8f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            } else {
+                Text(
+                    text = comment.user?.nickname ?: comment.user?.username ?: "匿名用户",
+                    color = TextPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(3.dp))
+
             Text(
                 text = comment.content.orEmpty(),
                 color = TextSecondary,
                 fontSize = if (isReply) 12.sp else 13.sp,
-                modifier = Modifier.weight(1f)
+                lineHeight = 18.sp
             )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable { onLike(commentId) }
-            ) {
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = if (comment.likesCount > 0) "♥" else "♡",
-                    color = if (comment.likesCount > 0) LikeRed else TextSecondary.copy(alpha = 0.3f),
-                    fontSize = 12.sp
+                    text = formatTimeAgo(comment.createdAt),
+                    color = TextSecondary.copy(alpha = 0.5f),
+                    fontSize = 11.sp
                 )
-                if (comment.likesCount > 0) {
-                    Spacer(modifier = Modifier.width(2.dp))
-                    Text("${comment.likesCount}", color = LikeRed, fontSize = 11.sp)
-                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "回复",
+                    color = TextSecondary.copy(alpha = 0.7f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onReply(comment) }
+                )
+            }
+        }
+
+        // 点赞
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .padding(start = 8.dp, top = 2.dp)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { onLike(commentId) }
+        ) {
+            Text(
+                text = if (comment.likesCount > 0) "♥" else "♡",
+                color = if (comment.likesCount > 0) LikeRed else TextSecondary.copy(alpha = 0.35f),
+                fontSize = if (isReply) 13.sp else 15.sp
+            )
+            if (comment.likesCount > 0) {
+                Text(
+                    text = "${comment.likesCount}",
+                    color = if (comment.likesCount > 0) LikeRed else TextSecondary.copy(alpha = 0.5f),
+                    fontSize = 10.sp
+                )
             }
         }
     }
 
-    // 渲染嵌套回复（只展示一层缩进，回复的回复仍挂在同一父评论下）
+    // 渲染嵌套回复
     comment.replies?.forEach { reply ->
         CommentItem(
             comment = reply,
+            parentComment = comment,
             onLike = onLike,
             onReply = { onReply(comment) },
             isReply = true
