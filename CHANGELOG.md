@@ -659,3 +659,21 @@ JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" \
 
 - `:app:compileDebugKotlin --no-configuration-cache` 通过
 - Git commit `1a5c49b` 已提交到 GoodX 独立仓库
+
+---
+
+## 2026-06-18：文档整理，产品事实归位到 design.md
+
+### 内容
+
+- 将 `agent.md` 中属于产品/技术事实的内容迁移到 `design.md`：
+  - 内容方向（好物 / 此刻 / 文娱）
+  - 发布页分类策略与补充字段
+  - 交互经验（发现页、全部页、后台管理、发布/编辑限制）
+  - 图片加载策略细节
+  - 当前运行环境（版本、服务器、缓存等）
+- `agent.md` 精简为 AI / 开发助手的工作规则、常用命令、发布检查清单
+
+### 验证
+
+- Git commit `c9e36cc` 已提交到 GoodX 独立仓库
