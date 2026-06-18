@@ -28,6 +28,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -903,13 +904,15 @@ fun LikeSection(
 fun FrostedGlassCard(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 16.dp,
-    backgroundAlpha: Float = 0.10f,
-    borderAlpha: Float = 0.22f,
+    backgroundAlpha: Float = 0.28f,
+    borderAlpha: Float = 0.45f,
+    shadowElevation: Dp = 3.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(cornerRadius)
     Box(
         modifier = modifier
+            .shadow(shadowElevation, shape, ambientColor = Color.Black.copy(alpha = 0.08f), spotColor = Color.Black.copy(alpha = 0.06f))
             .clip(shape)
             .background(Color.White.copy(alpha = backgroundAlpha), shape)
             .border(
@@ -947,8 +950,9 @@ fun CommentSection(
                 FrostedGlassCard(
                     modifier = Modifier.fillMaxWidth(),
                     cornerRadius = 16.dp,
-                    backgroundAlpha = 0.10f,
-                    borderAlpha = 0.22f
+                    backgroundAlpha = 0.28f,
+                    borderAlpha = 0.45f,
+                    shadowElevation = 3.dp
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
                         CommentItem(
