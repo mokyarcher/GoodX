@@ -39,10 +39,10 @@ app.use('/apk', express.static('/opt/projects/download-site/public/download'));
 // 版本检查（用于 App 内更新）
 app.get('/api/version', (req, res) => {
   res.json({
-    version: '0.7.5',
-    versionCode: 59,
-    apkUrl: 'http://111.229.166.216:3002/apk/goodx/goodx-v59.apk?v=59',
-    note: '发现页分页加载：首屏 30 条，下滑自动加载更多'
+    version: '0.7.6',
+    versionCode: 60,
+    apkUrl: 'http://111.229.166.216:3002/apk/goodx/goodx-v60.apk?v=60',
+    note: '帖子详情页视觉升级：评论楼中楼、玻璃质感卡片、统一点赞图标、优化互动区与评论输入'
   });
 });
 
