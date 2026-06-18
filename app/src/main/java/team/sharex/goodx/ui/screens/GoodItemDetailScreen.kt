@@ -904,9 +904,11 @@ fun LikeSection(
 fun FrostedGlassCard(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 16.dp,
-    backgroundAlpha: Float = 0.28f,
-    borderAlpha: Float = 0.45f,
-    shadowElevation: Dp = 3.dp,
+    backgroundColor: Color = Color(0xFFD8E0E0),
+    backgroundAlpha: Float = 0.42f,
+    borderColor: Color = Color.White,
+    borderAlpha: Float = 0.40f,
+    shadowElevation: Dp = 4.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
     val shape = RoundedCornerShape(cornerRadius)
@@ -914,10 +916,10 @@ fun FrostedGlassCard(
         modifier = modifier
             .shadow(shadowElevation, shape, ambientColor = Color.Black.copy(alpha = 0.08f), spotColor = Color.Black.copy(alpha = 0.06f))
             .clip(shape)
-            .background(Color.White.copy(alpha = backgroundAlpha), shape)
+            .background(backgroundColor.copy(alpha = backgroundAlpha), shape)
             .border(
                 width = 0.8.dp,
-                color = Color.White.copy(alpha = borderAlpha),
+                color = borderColor.copy(alpha = borderAlpha),
                 shape = shape
             ),
         content = content
@@ -949,10 +951,9 @@ fun CommentSection(
             comments.forEachIndexed { index, comment ->
                 FrostedGlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    cornerRadius = 16.dp,
-                    backgroundAlpha = 0.45f,
-                    borderAlpha = 0.55f,
-                    shadowElevation = 4.dp
+                    backgroundColor = Color(0xFFD8E0E0),
+                    backgroundAlpha = 0.42f,
+                    borderAlpha = 0.40f
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
                         CommentItem(
