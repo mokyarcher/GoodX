@@ -627,3 +627,20 @@ JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" \
 - APK 已部署到 `/opt/projects/download-site/public/download/goodx/goodx.apk`（13.9M）
 - 下载站首页已更新：`https://www.sharex.team/download/goodx/`
 - Git commit `720210b` 已提交到 GoodX 独立仓库
+
+### 问题修复
+
+- 首次部署后用户更新仍提示「已安装相同版本 0.7.4」
+- 原因：虽然 `build.gradle.kts` 已改为 versionCode 59，但首次打包时 Configuration Cache 仍导致 APK 内部版本为 58；同时 `goodx.apk` 同文件名也容易被系统安装器缓存
+- 解决：
+  - 彻底删除 `.gradle` / `app/build` / `build` 后重新打包
+  - 验证 APK 内部 `versionCode=59`、`versionName=0.7.5`
+  - `apkUrl` 改为唯一文件名 `/apk/goodx/goodx-v59.apk?v=59`
+  - 服务器同时保留 `goodx.apk` 和 `goodx-v59.apk`
+
+### 验证
+
+- 重新打包后 APK 内部版本确认：59 / 0.7.5
+- 服务器 `/api/version` 返回 `0.7.5` / `versionCode: 59` / `apkUrl` 指向 `goodx-v59.apk`
+- 下载站已重新生成：`https://www.sharex.team/download/goodx/`
+- Git commit `c84dbce` 已提交到 GoodX 独立仓库
