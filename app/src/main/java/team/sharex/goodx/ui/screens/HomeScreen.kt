@@ -19,6 +19,9 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -305,7 +308,12 @@ fun GoodItemCard(item: GoodItem, onClick: () -> Unit = {}) {
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(item.author?.nickname ?: item.author?.username ?: "匿名", color = TextSecondary, fontSize = 11.sp, maxLines = 1)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(if (item.likes > 0) "♥" else "♡", color = if (item.likes > 0) LikeRed else TextTertiary, fontSize = 12.sp)
+                        Icon(
+                            imageVector = if (item.likes > 0) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = null,
+                            tint = if (item.likes > 0) LikeRed else TextTertiary,
+                            modifier = Modifier.size(13.dp)
+                        )
                         Spacer(modifier = Modifier.width(2.dp)); Text("${item.likes}", color = if (item.likes > 0) LikeRed else TextSecondary, fontSize = 11.sp)
                         if (item.commentsCount > 0) { Spacer(modifier = Modifier.width(6.dp)); Text("💬", fontSize = 11.sp); Spacer(modifier = Modifier.width(2.dp)); Text("${item.commentsCount}", color = TextSecondary, fontSize = 11.sp) }
                         val inter = item.latestInteraction; if (inter != null && inter.user?.nickname != null) { Spacer(modifier = Modifier.width(6.dp)); Text(if (inter.type == "comment") "${inter.user.nickname} 刚刚评论了" else "${inter.user.nickname} 刚刚点赞了", color = TextTertiary, fontSize = 10.sp, maxLines = 1) }
