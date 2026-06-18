@@ -950,9 +950,9 @@ fun CommentSection(
                 FrostedGlassCard(
                     modifier = Modifier.fillMaxWidth(),
                     cornerRadius = 16.dp,
-                    backgroundAlpha = 0.28f,
-                    borderAlpha = 0.45f,
-                    shadowElevation = 3.dp
+                    backgroundAlpha = 0.45f,
+                    borderAlpha = 0.55f,
+                    shadowElevation = 4.dp
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
                         CommentItem(
