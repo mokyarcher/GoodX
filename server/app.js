@@ -41,7 +41,7 @@ app.get('/api/version', (req, res) => {
   res.json({
     version: '0.7.5',
     versionCode: 59,
-    apkUrl: 'http://111.229.166.216:3002/apk/goodx.apk?v=59',
+    apkUrl: 'http://111.229.166.216:3002/apk/goodx/goodx-v59.apk?v=59',
     note: '发现页分页加载：首屏 30 条，下滑自动加载更多'
   });
 });
