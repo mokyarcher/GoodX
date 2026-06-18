@@ -20,6 +20,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -1079,15 +1082,17 @@ fun CommentItem(
                     indication = null
                 ) { onLike(commentId) }
         ) {
-            Text(
-                text = if (comment.likesCount > 0) "♥" else "♡",
-                color = if (comment.likesCount > 0) LikeRed else TextSecondary.copy(alpha = 0.35f),
-                fontSize = if (isReply) 13.sp else 15.sp
+            val isLiked = comment.likesCount > 0
+            Icon(
+                imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                contentDescription = null,
+                tint = if (isLiked) LikeRed else TextSecondary.copy(alpha = 0.45f),
+                modifier = Modifier.size(if (isReply) 16.dp else 18.dp)
             )
-            if (comment.likesCount > 0) {
+            if (isLiked) {
                 Text(
                     text = "${comment.likesCount}",
-                    color = if (comment.likesCount > 0) LikeRed else TextSecondary.copy(alpha = 0.5f),
+                    color = LikeRed,
                     fontSize = 10.sp
                 )
             }
