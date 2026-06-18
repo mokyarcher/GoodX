@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -52,7 +53,6 @@ import team.sharex.goodx.data.remote.errorMessage
 import team.sharex.goodx.model.Comment
 import team.sharex.goodx.model.GoodItem
 import team.sharex.goodx.model.displayName
-import team.sharex.goodx.ui.components.LiquidGlassCard
 import team.sharex.goodx.ui.theme.Accent
 import team.sharex.goodx.ui.theme.Background
 import team.sharex.goodx.ui.theme.LikeRed
@@ -900,6 +900,28 @@ fun LikeSection(
 }
 
 @Composable
+fun FrostedGlassCard(
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = 16.dp,
+    backgroundAlpha: Float = 0.10f,
+    borderAlpha: Float = 0.22f,
+    content: @Composable BoxScope.() -> Unit
+) {
+    val shape = RoundedCornerShape(cornerRadius)
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(Color.White.copy(alpha = backgroundAlpha), shape)
+            .border(
+                width = 0.8.dp,
+                color = Color.White.copy(alpha = borderAlpha),
+                shape = shape
+            ),
+        content = content
+    )
+}
+
+@Composable
 fun CommentSection(
     comments: List<Comment>,
     commentsCount: Int,
@@ -922,13 +944,11 @@ fun CommentSection(
             )
         } else {
             comments.forEachIndexed { index, comment ->
-                LiquidGlassCard(
+                FrostedGlassCard(
                     modifier = Modifier.fillMaxWidth(),
                     cornerRadius = 16.dp,
-                    blurRadius = 6.dp,
-                    tintColor = Color.White.copy(alpha = 0.05f),
-                    accentColor = Accent.copy(alpha = 0.06f),
-                    borderAlpha = 0.10f
+                    backgroundAlpha = 0.10f,
+                    borderAlpha = 0.22f
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
                         CommentItem(
