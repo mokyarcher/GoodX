@@ -10,6 +10,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -169,12 +170,80 @@ fun NavItem(icon: String, label: String, isSelected: Boolean, onClick: () -> Uni
 fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Modifier) {
     var goodItems by remember { mutableStateOf<List<GoodItem>>(RetrofitClient.goodItemsCache ?: emptyList()) }
     var isLoading by remember { mutableStateOf(goodItems.isEmpty()) }
+    var isLoadingMore by remember { mutableStateOf(false) }
+    var hasMore by remember { mutableStateOf(true) }
+    var currentPage by remember { mutableStateOf(1) }
+    var loadError by remember { mutableStateOf<String?>(null) }
+    val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
-    fun loadItems() { scope.launch {
-        isLoading = true
-        try { val r = RetrofitClient.apiService.getGoodItems(sort = "newest"); if (r.isSuccessful) goodItems = r.body() ?: emptyList() } catch (_: Exception) {}; isLoading = false }
+    val nearBottom by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            totalItems > 0 && lastVisible >= totalItems - 3
+        }
     }
+
+    fun loadItems() {
+        scope.launch {
+            isLoading = true
+            isLoadingMore = false
+            loadError = null
+            currentPage = 1
+            hasMore = true
+            try {
+                val r = RetrofitClient.apiService.getGoodItems(sort = "newest", page = 1, limit = 30)
+                if (r.isSuccessful) {
+                    val items = r.body() ?: emptyList()
+                    goodItems = items
+                    RetrofitClient.goodItemsCache = items
+                    RetrofitClient.cacheTimestamp = System.currentTimeMillis()
+                    hasMore = items.size >= 30
+                } else {
+                    loadError = "加载失败，点击重试"
+                }
+            } catch (e: Exception) {
+                loadError = "网络错误，点击重试"
+            }
+            isLoading = false
+        }
+    }
+
+    fun loadMore() {
+        if (isLoadingMore || !hasMore || loadError != null) return
+        scope.launch {
+            isLoadingMore = true
+            loadError = null
+            val nextPage = currentPage + 1
+            try {
+                val r = RetrofitClient.apiService.getGoodItems(sort = "newest", page = nextPage, limit = 20)
+                if (r.isSuccessful) {
+                    val items = r.body() ?: emptyList()
+                    if (items.isEmpty()) {
+                        hasMore = false
+                    } else {
+                        goodItems = goodItems + items
+                        currentPage = nextPage
+                        hasMore = items.size >= 20
+                    }
+                } else {
+                    loadError = "加载更多失败，点击重试"
+                }
+            } catch (e: Exception) {
+                loadError = "网络错误，点击重试"
+            }
+            isLoadingMore = false
+        }
+    }
+
+    LaunchedEffect(nearBottom) {
+        if (nearBottom && !isLoading && !isLoadingMore && hasMore && loadError == null) {
+            loadMore()
+        }
+    }
+
     LaunchedEffect(Unit) { if (goodItems.isEmpty()) loadItems() }
 
     LiquidGlassBackdrop(modifier = modifier.fillMaxSize(), baseColor = Background, accentColor = Accent) {
@@ -183,10 +252,20 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
                 Text("发现", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                 TextButton(onClick = { loadItems() }, enabled = !isLoading, colors = ButtonDefaults.textButtonColors(contentColor = if (isLoading) TextSecondary else Accent)) { Text("↻", fontSize = 24.sp) }
             }
-            if (isLoading) Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Accent, strokeWidth = 2.dp) }
-            else if (goodItems.isEmpty()) Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("暂无好物", color = TextSecondary, fontSize = 16.sp); Text("去发布第一个好物吧", color = TextTertiary, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp)) } }
-            else LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                items(goodItems, key = { it.id }) { item -> GoodItemCard(item = item, onClick = { cacheGoodItemPreview(item); onGoodItemClick(item.id) }) }
+            when {
+                isLoading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Accent, strokeWidth = 2.dp) }
+                loadError != null && goodItems.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text(loadError!!, color = TextSecondary, fontSize = 14.sp); Spacer(modifier = Modifier.height(8.dp)); TextButton(onClick = { loadItems() }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("点击重试", fontSize = 14.sp) } } }
+                goodItems.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("暂无好物", color = TextSecondary, fontSize = 16.sp); Text("去发布第一个好物吧", color = TextTertiary, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp)) } }
+                else -> LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    items(goodItems, key = { it.id }) { item -> GoodItemCard(item = item, onClick = { cacheGoodItemPreview(item); onGoodItemClick(item.id) }) }
+                    item {
+                        when {
+                            isLoadingMore -> Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Accent, strokeWidth = 2.dp, modifier = Modifier.size(24.dp)) }
+                            loadError != null -> Column(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) { Text(loadError!!, color = TextSecondary, fontSize = 13.sp); TextButton(onClick = { loadMore() }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("点击重试", fontSize = 13.sp) } }
+                            !hasMore -> Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { Text("— 没有更多了 —", color = TextTertiary, fontSize = 12.sp) }
+                        }
+                    }
+                }
             }
         }
     }
