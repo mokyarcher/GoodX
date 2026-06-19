@@ -17,9 +17,9 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import team.sharex.goodx.data.remote.RetrofitClient
 import team.sharex.goodx.data.remote.TokenManager
 import team.sharex.goodx.ui.theme.Accent
@@ -34,35 +34,38 @@ fun SplashScreen(onReady: () -> Unit) {
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        val startTime = System.currentTimeMillis()
-
-        awaitAll(
-            async(Dispatchers.IO) {
-                try {
-                    val r = RetrofitClient.apiService.getGoodItems(sort = "newest", limit = 30)
-                    r.body()?.let { items ->
-                        RetrofitClient.goodItemsCache = items
-                        RetrofitClient.cacheTimestamp = System.currentTimeMillis()
-                        val loader = context.imageLoader
-                        items.take(6).forEach { item ->
-                            item.images?.firstOrNull()?.let { path ->
-                                val filename = path.substringAfterLast('/')
-                                val url = "$GOODX_BASE_URL/api/upload/thumb/$filename"
-                                loader.enqueue(ImageRequest.Builder(context).data(url).build())
-                            }
+        // 后台并行加载好物列表并预加载前几张缩略图
+        val preloadJob = async(Dispatchers.IO) {
+            try {
+                val r = RetrofitClient.apiService.getGoodItems(sort = "newest", limit = 30)
+                r.body()?.let { items ->
+                    RetrofitClient.goodItemsCache = items
+                    RetrofitClient.cacheTimestamp = System.currentTimeMillis()
+                    val loader = context.imageLoader
+                    items.take(6).forEach { item ->
+                        item.images?.firstOrNull()?.let { path ->
+                            val filename = path.substringAfterLast('/')
+                            val url = "$GOODX_BASE_URL/api/upload/thumb/$filename"
+                            loader.enqueue(ImageRequest.Builder(context).data(url).build())
                         }
                     }
-                } catch (_: Exception) {}
-            },
-            async(Dispatchers.IO) {
-                try { RetrofitClient.apiService.getMe() } catch (_: Exception) {}
-                try { RetrofitClient.apiService.getUnreadCount() } catch (_: Exception) {}
-            }
-        )
+                }
+            } catch (_: Exception) {}
+        }
 
-        val elapsed = System.currentTimeMillis() - startTime
-        val remaining = 1000L - elapsed
-        if (remaining > 0) delay(remaining)
+        // 用户相关数据不阻塞启动，在后台静默获取
+        launch(Dispatchers.IO) {
+            try { RetrofitClient.apiService.getMe() } catch (_: Exception) {}
+            try { RetrofitClient.apiService.getUnreadCount() } catch (_: Exception) {}
+        }
+
+        // 最少展示 400ms，避免启动页一闪而过
+        delay(400)
+
+        // 最多再等待 1100ms 让关键数据回来（总上限约 1500ms）
+        withTimeoutOrNull(1100L) {
+            preloadJob.await()
+        }
 
         isReady = true
         delay(300)
