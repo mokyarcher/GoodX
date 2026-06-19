@@ -381,17 +381,7 @@ fun GoodItemDetailScreen(
                             text = "回复 ${replyTarget?.user?.nickname ?: replyTarget?.user?.username ?: "匿名"}",
                             color = Accent,
                             fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = "取消",
-                            color = TextSecondary,
-                            fontSize = 13.sp,
-                            modifier = Modifier.clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { replyTarget = null }
+                            fontWeight = FontWeight.Medium
                         )
                     }
                 }
