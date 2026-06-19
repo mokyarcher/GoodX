@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -160,11 +161,12 @@ fun GoodItemDetailScreen(
                 modifier = Modifier.padding(start = 16.dp, top = 48.dp, bottom = 12.dp)
             )
 
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            Box(modifier = Modifier.weight(1f)) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                 // 图片轮播
                 item {
                     if (!goodItem.images.isNullOrEmpty()) {
@@ -340,7 +342,25 @@ fun GoodItemDetailScreen(
                 }
             }
 
-            // 底部评论输入
+            // 回复状态下，点击内容区域暗面取消回复
+            if (replyTarget != null) {
+                val focusManager = LocalFocusManager.current
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.10f))
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
+                            replyTarget = null
+                            focusManager.clearFocus()
+                        }
+                ) { }
+            }
+        }
+
+        // 底部评论输入
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
