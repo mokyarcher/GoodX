@@ -366,9 +366,9 @@ fun GoodItemDetailScreen(
                         )
                     },
                     confirmButton = {
-                        LiquidGlassButton(
+                        Button(
                             onClick = {
-                                if (replyText.isBlank()) return@LiquidGlassButton
+                                if (replyText.isBlank()) return@Button
                                 scope.launch {
                                     isSendingReply = true
                                     try {
@@ -391,41 +391,33 @@ fun GoodItemDetailScreen(
                                 }
                             },
                             enabled = !isSendingReply && replyText.isNotBlank(),
-                            cornerRadius = 12.dp,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .widthIn(min = 80.dp)
+                            colors = ButtonDefaults.buttonColors(containerColor = Accent),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.height(40.dp)
                         ) {
-                            Box(
-                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (isSendingReply) {
-                                    CircularProgressIndicator(
-                                        color = Accent,
-                                        modifier = Modifier.size(16.dp),
-                                        strokeWidth = 2.dp
-                                    )
-                                } else {
-                                    Text("发送", fontSize = 14.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
-                                }
+                            if (isSendingReply) {
+                                CircularProgressIndicator(
+                                    color = Color.White,
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text("发送", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Medium)
                             }
                         }
                     },
                     dismissButton = {
-                        LiquidGlassButton(
+                        OutlinedButton(
                             onClick = { replyTarget = null; replyText = "" },
-                            cornerRadius = 12.dp,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .widthIn(min = 80.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.height(40.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
+                            border = androidx.compose.foundation.BorderStroke(
+                                width = 1.dp,
+                                color = TextSecondary.copy(alpha = 0.3f)
+                            )
                         ) {
-                            Box(
-                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("取消", fontSize = 14.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
-                            }
+                            Text("取消", fontSize = 14.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
                         }
                     }
                 )
@@ -473,9 +465,9 @@ fun GoodItemDetailScreen(
                     }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                LiquidGlassButton(
+                Button(
                     onClick = {
-                        if (commentText.isBlank()) return@LiquidGlassButton
+                        if (commentText.isBlank()) return@Button
                         scope.launch {
                             isSending = true
                             try {
@@ -494,13 +486,14 @@ fun GoodItemDetailScreen(
                         }
                     },
                     enabled = !isSending && commentText.isNotBlank(),
-                    cornerRadius = 16.dp,
+                    colors = ButtonDefaults.buttonColors(containerColor = Accent),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.height(44.dp)
                 ) {
                     if (isSending) {
-                        CircularProgressIndicator(color = Accent, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("发送", fontSize = 13.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
+                        Text("发送", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Medium)
                     }
                 }
             }
@@ -963,32 +956,6 @@ fun FrostedGlassCard(
                 color = borderColor.copy(alpha = borderAlpha),
                 shape = shape
             ),
-        content = content
-    )
-}
-
-@Composable
-private fun LiquidGlassButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    cornerRadius: Dp = 16.dp,
-    content: @Composable BoxScope.() -> Unit
-) {
-    LiquidGlassCard(
-        modifier = modifier
-            .clip(RoundedCornerShape(cornerRadius))
-            .clickable(
-                enabled = enabled,
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onClick
-            ),
-        cornerRadius = cornerRadius,
-        blurRadius = 20.dp,
-        tintColor = Color.White.copy(alpha = 0.28f),
-        accentColor = Accent,
-        borderAlpha = 0.42f,
         content = content
     )
 }
