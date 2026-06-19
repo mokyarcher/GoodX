@@ -59,6 +59,7 @@ import team.sharex.goodx.data.remote.errorMessage
 import team.sharex.goodx.model.Comment
 import team.sharex.goodx.model.GoodItem
 import team.sharex.goodx.model.displayName
+import team.sharex.goodx.ui.components.LiquidGlassCard
 import team.sharex.goodx.ui.theme.Accent
 import team.sharex.goodx.ui.theme.Background
 import team.sharex.goodx.ui.theme.LikeRed
@@ -365,9 +366,9 @@ fun GoodItemDetailScreen(
                         )
                     },
                     confirmButton = {
-                        Button(
+                        LiquidGlassButton(
                             onClick = {
-                                if (replyText.isBlank()) return@Button
+                                if (replyText.isBlank()) return@LiquidGlassButton
                                 scope.launch {
                                     isSendingReply = true
                                     try {
@@ -390,26 +391,27 @@ fun GoodItemDetailScreen(
                                 }
                             },
                             enabled = !isSendingReply && replyText.isNotBlank(),
-                            colors = ButtonDefaults.buttonColors(containerColor = Accent),
-                            shape = RoundedCornerShape(10.dp)
+                            cornerRadius = 12.dp,
+                            modifier = Modifier.height(36.dp)
                         ) {
                             if (isSendingReply) {
                                 CircularProgressIndicator(
-                                    color = TextPrimary,
+                                    color = Accent,
                                     modifier = Modifier.size(16.dp),
                                     strokeWidth = 2.dp
                                 )
                             } else {
-                                Text("发送", fontSize = 13.sp)
+                                Text("发送", fontSize = 13.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
                             }
                         }
                     },
                     dismissButton = {
-                        TextButton(
+                        LiquidGlassButton(
                             onClick = { replyTarget = null; replyText = "" },
-                            colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)
+                            cornerRadius = 12.dp,
+                            modifier = Modifier.height(36.dp)
                         ) {
-                            Text("取消", fontSize = 14.sp)
+                            Text("取消", fontSize = 13.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
                         }
                     }
                 )
@@ -457,9 +459,9 @@ fun GoodItemDetailScreen(
                     }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Button(
+                LiquidGlassButton(
                     onClick = {
-                        if (commentText.isBlank()) return@Button
+                        if (commentText.isBlank()) return@LiquidGlassButton
                         scope.launch {
                             isSending = true
                             try {
@@ -478,14 +480,13 @@ fun GoodItemDetailScreen(
                         }
                     },
                     enabled = !isSending && commentText.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Accent),
-                    shape = RoundedCornerShape(0.dp),
+                    cornerRadius = 16.dp,
                     modifier = Modifier.height(44.dp)
                 ) {
                     if (isSending) {
-                        CircularProgressIndicator(color = TextPrimary, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        CircularProgressIndicator(color = Accent, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("发送", fontSize = 13.sp)
+                        Text("发送", fontSize = 13.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
                     }
                 }
             }
@@ -953,6 +954,32 @@ fun FrostedGlassCard(
 }
 
 @Composable
+private fun LiquidGlassButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    cornerRadius: Dp = 16.dp,
+    content: @Composable BoxScope.() -> Unit
+) {
+    LiquidGlassCard(
+        modifier = modifier
+            .clip(RoundedCornerShape(cornerRadius))
+            .clickable(
+                enabled = enabled,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            ),
+        cornerRadius = cornerRadius,
+        blurRadius = 20.dp,
+        tintColor = Color.White.copy(alpha = 0.28f),
+        accentColor = Accent,
+        borderAlpha = 0.42f,
+        content = content
+    )
+}
+
+@Composable
 fun CommentSection(
     comments: List<Comment>,
     commentsCount: Int,
@@ -975,11 +1002,13 @@ fun CommentSection(
             )
         } else {
             comments.forEachIndexed { index, comment ->
-                FrostedGlassCard(
+                LiquidGlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    backgroundColor = Color(0xFFD8E0E0),
-                    backgroundAlpha = 0.42f,
-                    borderAlpha = 0.40f
+                    cornerRadius = 16.dp,
+                    blurRadius = 24.dp,
+                    tintColor = Color.White.copy(alpha = 0.24f),
+                    accentColor = Accent,
+                    borderAlpha = 0.38f
                 ) {
                     Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
                         CommentItem(
@@ -1110,42 +1139,53 @@ fun CommentItem(
                     fontSize = 11.sp
                 )
                 Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = "回复",
-                    color = TextSecondary.copy(alpha = 0.7f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onReply(comment) }
-                )
+                LiquidGlassButton(
+                    onClick = { onReply(comment) },
+                    cornerRadius = 10.dp
+                ) {
+                    Text(
+                        text = "回复",
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
             }
         }
 
         // 点赞
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
+        LiquidGlassCard(
             modifier = Modifier
                 .padding(start = 8.dp, top = 2.dp)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
-                ) { onLike(commentId) }
+                ) { onLike(commentId) },
+            cornerRadius = 12.dp,
+            blurRadius = 16.dp,
+            tintColor = Color.White.copy(alpha = 0.20f),
+            accentColor = Accent,
+            borderAlpha = 0.32f
         ) {
-            val isLiked = comment.likesCount > 0
-            Icon(
-                imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                contentDescription = null,
-                tint = if (isLiked) LikeRed else TextSecondary.copy(alpha = 0.45f),
-                modifier = Modifier.size(if (isReply) 16.dp else 18.dp)
-            )
-            if (isLiked) {
-                Text(
-                    text = "${comment.likesCount}",
-                    color = LikeRed,
-                    fontSize = 10.sp
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+            ) {
+                val isLiked = comment.likesCount > 0
+                Icon(
+                    imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = null,
+                    tint = if (isLiked) LikeRed else TextSecondary.copy(alpha = 0.55f),
+                    modifier = Modifier.size(if (isReply) 16.dp else 18.dp)
                 )
+                if (isLiked) {
+                    Text(
+                        text = "${comment.likesCount}",
+                        color = LikeRed,
+                        fontSize = 10.sp
+                    )
+                }
             }
         }
     }
