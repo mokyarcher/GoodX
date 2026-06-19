@@ -5,6 +5,9 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +28,7 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -38,6 +42,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -269,31 +274,30 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
                 goodItems.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("暂无好物", color = TextSecondary, fontSize = 16.sp); Text("去发布第一个好物吧", color = TextTertiary, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp)) } }
                 else -> {
                     val pullRefreshState = rememberPullToRefreshState()
-                    PullToRefreshBox(
-                        isRefreshing = isRefreshing,
-                        onRefresh = { loadItems(isRefresh = true) },
-                        modifier = Modifier.fillMaxSize(),
-                        state = pullRefreshState,
-                        indicator = {
-                            PullToRefreshDefaults.Indicator(
+                    val density = LocalDensity.current
+                    val targetOffset = with(density) { pullRefreshState.distanceFraction * 80.dp.toPx() }
+                    val contentOffsetAnim = remember { Animatable(0f) }
+                    LaunchedEffect(targetOffset) {
+                        if (targetOffset >= contentOffsetAnim.value) {
+                            contentOffsetAnim.snapTo(targetOffset)
+                        } else {
+                            contentOffsetAnim.animateTo(targetOffset, animationSpec = tween(durationMillis = 300))
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pullToRefresh(
                                 state = pullRefreshState,
                                 isRefreshing = isRefreshing,
-                                modifier = Modifier.align(Alignment.TopCenter),
-                                containerColor = Color.White.copy(alpha = 0.85f),
-                                color = Accent
+                                onRefresh = { loadItems(isRefresh = true) }
                             )
-                        }
                     ) {
                         LazyColumn(
                             state = listState,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .offset {
-                                    IntOffset(
-                                        0,
-                                        (pullRefreshState.distanceFraction * 80.dp.roundToPx()).toInt()
-                                    )
-                                },
+                                .offset { IntOffset(0, contentOffsetAnim.value.toInt()) },
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
@@ -306,6 +310,13 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
                                 }
                             }
                         }
+                        PullToRefreshDefaults.Indicator(
+                            state = pullRefreshState,
+                            isRefreshing = isRefreshing,
+                            modifier = Modifier.align(Alignment.TopCenter),
+                            containerColor = Color.White.copy(alpha = 0.85f),
+                            color = Accent
+                        )
                     }
                 }
             }
