@@ -15,8 +15,8 @@ android {
         applicationId = "team.sharex.goodx"
         minSdk = 24
         targetSdk = 36
-        versionCode = 60
-        versionName = "0.7.6"
+        versionCode = 61
+        versionName = "0.7.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
