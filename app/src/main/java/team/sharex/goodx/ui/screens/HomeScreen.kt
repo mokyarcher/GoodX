@@ -24,6 +24,8 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -206,6 +208,9 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
                     RetrofitClient.goodItemsCache = items
                     RetrofitClient.cacheTimestamp = System.currentTimeMillis()
                     hasMore = items.size >= 30
+                    if (isRefresh) {
+                        listState.animateScrollToItem(0)
+                    }
                 } else {
                     loadError = "加载失败，点击重试"
                 }
@@ -261,18 +266,31 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
                 isLoading && !isRefreshing -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Accent, strokeWidth = 2.dp) }
                 loadError != null && goodItems.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text(loadError!!, color = TextSecondary, fontSize = 14.sp); Spacer(modifier = Modifier.height(8.dp)); TextButton(onClick = { loadItems() }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("点击重试", fontSize = 14.sp) } } }
                 goodItems.isEmpty() -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("暂无好物", color = TextSecondary, fontSize = 16.sp); Text("去发布第一个好物吧", color = TextTertiary, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp)) } }
-                else -> PullToRefreshBox(
-                    isRefreshing = isRefreshing,
-                    onRefresh = { loadItems(isRefresh = true) },
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        items(goodItems, key = { it.id }) { item -> GoodItemCard(item = item, onClick = { cacheGoodItemPreview(item); onGoodItemClick(item.id) }) }
-                        item {
-                            when {
-                                isLoadingMore -> Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Accent, strokeWidth = 2.dp, modifier = Modifier.size(24.dp)) }
-                                loadError != null -> Column(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) { Text(loadError!!, color = TextSecondary, fontSize = 13.sp); TextButton(onClick = { loadMore() }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("点击重试", fontSize = 13.sp) } }
-                                !hasMore -> Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { Text("— 没有更多了 —", color = TextTertiary, fontSize = 12.sp) }
+                else -> {
+                    val pullRefreshState = rememberPullToRefreshState()
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = { loadItems(isRefresh = true) },
+                        modifier = Modifier.fillMaxSize(),
+                        state = pullRefreshState,
+                        indicator = {
+                            PullToRefreshDefaults.Indicator(
+                                state = pullRefreshState,
+                                isRefreshing = isRefreshing,
+                                modifier = Modifier.align(Alignment.TopCenter),
+                                containerColor = Color.White.copy(alpha = 0.85f),
+                                color = Accent
+                            )
+                        }
+                    ) {
+                        LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                            items(goodItems, key = { it.id }) { item -> GoodItemCard(item = item, onClick = { cacheGoodItemPreview(item); onGoodItemClick(item.id) }) }
+                            item {
+                                when {
+                                    isLoadingMore -> Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Accent, strokeWidth = 2.dp, modifier = Modifier.size(24.dp)) }
+                                    loadError != null -> Column(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) { Text(loadError!!, color = TextSecondary, fontSize = 13.sp); TextButton(onClick = { loadMore() }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("点击重试", fontSize = 13.sp) } }
+                                    !hasMore -> Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { Text("— 没有更多了 —", color = TextTertiary, fontSize = 12.sp) }
+                                }
                             }
                         }
                     }
