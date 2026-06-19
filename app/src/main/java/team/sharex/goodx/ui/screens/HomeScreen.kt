@@ -31,6 +31,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -297,7 +299,7 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
                             state = listState,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .offset { IntOffset(0, contentOffsetAnim.value.toInt()) },
+                                .graphicsLayer { translationY = contentOffsetAnim.value },
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
@@ -330,8 +332,26 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
 @Composable
 fun GoodItemCard(item: GoodItem, onClick: () -> Unit = {}) {
     val cardShape = RoundedCornerShape(22.dp)
-    Row(modifier = Modifier.fillMaxWidth().height(120.dp).shadow(12.dp, cardShape, ambientColor = androidx.compose.ui.graphics.Color(0xFF5CA9A5).copy(alpha = 0.22f), spotColor = androidx.compose.ui.graphics.Color(0xFF0ABAB5).copy(alpha = 0.28f)).clip(cardShape).background(brush = Brush.linearGradient(listOf(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.28f), BackgroundSecondary.copy(alpha = 0.48f), androidx.compose.ui.graphics.Color(0xFFE8FDFB).copy(alpha = 0.22f)))).border(1.2.dp, Brush.linearGradient(listOf(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.70f), Accent.copy(alpha = 0.24f), androidx.compose.ui.graphics.Color.White.copy(alpha = 0.30f))), cardShape).drawBehind { drawLine(brush = Brush.horizontalGradient(listOf(androidx.compose.ui.graphics.Color.Transparent, Color.White.copy(alpha = 0.50f), Color.White.copy(alpha = 0.30f), Color.Transparent)), start = Offset(size.width * 0.06f, 1f), end = Offset(size.width * 0.94f, 1f), strokeWidth = 1.6f) }.clickable { onClick() }
-    ) {
+    val currentOnClick by rememberUpdatedState(onClick)
+    val cardModifier = remember(cardShape) {
+        Modifier
+            .fillMaxWidth()
+            .height(120.dp)
+            .shadow(12.dp, cardShape, ambientColor = Color(0xFF5CA9A5).copy(alpha = 0.22f), spotColor = Color(0xFF0ABAB5).copy(alpha = 0.28f))
+            .clip(cardShape)
+            .background(brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.28f), BackgroundSecondary.copy(alpha = 0.48f), Color(0xFFE8FDFB).copy(alpha = 0.22f))))
+            .border(1.2.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.70f), Accent.copy(alpha = 0.24f), Color.White.copy(alpha = 0.30f))), cardShape)
+            .drawBehind {
+                drawLine(
+                    brush = Brush.horizontalGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.50f), Color.White.copy(alpha = 0.30f), Color.Transparent)),
+                    start = Offset(size.width * 0.06f, 1f),
+                    end = Offset(size.width * 0.94f, 1f),
+                    strokeWidth = 1.6f
+                )
+            }
+            .clickable { currentOnClick() }
+    }
+    Row(modifier = cardModifier) {
         Box(modifier = Modifier.width(120.dp).fillMaxHeight()) {
             if (item.images.orEmpty().isNotEmpty()) {
                 AsyncImage(model = ImageRequest.Builder(LocalContext.current).data(thumbnailImageUrl(item.images!!.first())).crossfade(120).size(360, 360).scale(Scale.FILL).memoryCacheKey("detail-thumb:${item.images!!.first()}:180").diskCacheKey("detail-thumb:${item.images!!.first()}:180").build(), contentDescription = item.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
