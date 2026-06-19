@@ -338,7 +338,7 @@ fun GoodItemCard(item: GoodItem, onClick: () -> Unit = {}) {
         Modifier
             .fillMaxWidth()
             .height(120.dp)
-            .shadow(12.dp, cardShape, ambientColor = Color(0xFF5CA9A5).copy(alpha = 0.22f), spotColor = Color(0xFF0ABAB5).copy(alpha = 0.28f))
+            .shadow(8.dp, cardShape, ambientColor = Color(0xFF5CA9A5).copy(alpha = 0.18f), spotColor = Color(0xFF0ABAB5).copy(alpha = 0.24f))
             .clip(cardShape)
             .background(brush = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.28f), BackgroundSecondary.copy(alpha = 0.48f), Color(0xFFE8FDFB).copy(alpha = 0.22f))))
             .border(1.2.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.70f), Accent.copy(alpha = 0.24f), Color.White.copy(alpha = 0.30f))), cardShape)
@@ -355,11 +355,11 @@ fun GoodItemCard(item: GoodItem, onClick: () -> Unit = {}) {
     Row(modifier = cardModifier) {
         Box(modifier = Modifier.width(120.dp).fillMaxHeight()) {
             if (item.images.orEmpty().isNotEmpty()) {
-                AsyncImage(model = ImageRequest.Builder(LocalContext.current).data(thumbnailImageUrl(item.images!!.first())).crossfade(120).size(360, 360).scale(Scale.FILL).memoryCacheKey("detail-thumb:${item.images!!.first()}:180").diskCacheKey("detail-thumb:${item.images!!.first()}:180").build(), contentDescription = item.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                AsyncImage(model = ImageRequest.Builder(LocalContext.current).data(thumbnailImageUrl(item.images!!.first())).crossfade(80).size(240, 240).scale(Scale.FILL).memoryCacheKey("detail-thumb:${item.images!!.first()}:240").diskCacheKey("detail-thumb:${item.images!!.first()}:240").build(), contentDescription = item.title, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             } else Box(modifier = Modifier.fillMaxSize().background(Brush.radialGradient(listOf(Accent.copy(alpha = 0.22f), BackgroundSecondary.copy(alpha = 0.65f)))), contentAlignment = Alignment.Center) { Text(item.category.iconEmoji(), fontSize = 36.sp) }
             Box(modifier = Modifier.align(Alignment.CenterEnd).width(30.dp).fillMaxHeight().background(Brush.horizontalGradient(listOf(androidx.compose.ui.graphics.Color.Transparent, androidx.compose.ui.graphics.Color.White.copy(alpha = 0.22f), BackgroundSecondary.copy(alpha = 0.38f)))))
         }
-        LiquidGlassCard(modifier = Modifier.fillMaxHeight().weight(1f), cornerRadius = 0.dp, blurRadius = 30.dp, tintColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.30f), accentColor = Accent, borderAlpha = 0.0f) {
+        LiquidGlassCard(modifier = Modifier.fillMaxHeight().weight(1f), cornerRadius = 0.dp, blurRadius = 0.dp, tintColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.30f), accentColor = Accent, borderAlpha = 0.0f) {
             Column(modifier = Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
@@ -373,7 +373,7 @@ fun GoodItemCard(item: GoodItem, onClick: () -> Unit = {}) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f, fill = false)) {
                         val authorAvatar = item.author?.avatar
                         Box(modifier = Modifier.size(18.dp).clip(CircleShape).background(TextSecondary.copy(alpha = 0.12f)), contentAlignment = Alignment.Center) {
-                            if (!authorAvatar.isNullOrBlank()) AsyncImage(model = ImageRequest.Builder(LocalContext.current).data("$GOODX_BASE_URL/api/upload/thumb/${authorAvatar.substringAfterLast('/')}").size(72,72).scale(Scale.FILL).crossfade(80).memoryCacheKey("avatar-thumb:$authorAvatar").diskCacheKey("avatar-thumb:$authorAvatar").build(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                            if (!authorAvatar.isNullOrBlank()) AsyncImage(model = ImageRequest.Builder(LocalContext.current).data("$GOODX_BASE_URL/api/upload/thumb/${authorAvatar.substringAfterLast('/')}").size(36,36).scale(Scale.FILL).crossfade(0).memoryCacheKey("avatar-thumb:$authorAvatar").diskCacheKey("avatar-thumb:$authorAvatar").build(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                             else Text((item.author?.nickname ?: "?").first().uppercase(), color = Accent, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                         }
                         Spacer(modifier = Modifier.width(5.dp))
