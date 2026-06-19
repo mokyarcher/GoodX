@@ -392,16 +392,23 @@ fun GoodItemDetailScreen(
                             },
                             enabled = !isSendingReply && replyText.isNotBlank(),
                             cornerRadius = 12.dp,
-                            modifier = Modifier.height(36.dp)
+                            modifier = Modifier
+                                .height(40.dp)
+                                .widthIn(min = 80.dp)
                         ) {
-                            if (isSendingReply) {
-                                CircularProgressIndicator(
-                                    color = Accent,
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Text("发送", fontSize = 13.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
+                            Box(
+                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isSendingReply) {
+                                    CircularProgressIndicator(
+                                        color = Accent,
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Text("发送", fontSize = 14.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
+                                }
                             }
                         }
                     },
@@ -409,9 +416,16 @@ fun GoodItemDetailScreen(
                         LiquidGlassButton(
                             onClick = { replyTarget = null; replyText = "" },
                             cornerRadius = 12.dp,
-                            modifier = Modifier.height(36.dp)
+                            modifier = Modifier
+                                .height(40.dp)
+                                .widthIn(min = 80.dp)
                         ) {
-                            Text("取消", fontSize = 13.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
+                            Box(
+                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("取消", fontSize = 14.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
+                            }
                         }
                     }
                 )
