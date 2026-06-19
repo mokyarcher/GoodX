@@ -1,5 +1,6 @@
 package team.sharex.goodx.data.remote
 
+import androidx.compose.runtime.mutableStateOf
 import android.content.Context
 import okhttp3.Cache
 import okhttp3.OkHttpClient
@@ -15,8 +16,8 @@ object RetrofitClient {
     const val BASE_URL = "http://111.229.166.216:3002/"
     private const val CACHE_SIZE = 20L * 1024 * 1024 // 20MB OkHttp cache
 
-    // 内存数据缓存（Splash 预加载共享给 DiscoverTab）
-    var goodItemsCache: List<GoodItem>? = null
+    // 内存数据缓存（Splash 预加载共享给 DiscoverTab，使用 State 让 UI 自动刷新）
+    val goodItemsCache = mutableStateOf<List<GoodItem>?>(null)
     var cacheTimestamp: Long = 0L
     const val CACHE_VALID_MS = 60_000L // 60秒内有效
 

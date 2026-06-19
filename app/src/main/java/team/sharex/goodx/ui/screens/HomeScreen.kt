@@ -182,7 +182,8 @@ fun NavItem(icon: String, label: String, isSelected: Boolean, onClick: () -> Uni
 // ============================================
 @Composable
 fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Modifier) {
-    var goodItems by remember { mutableStateOf<List<GoodItem>>(RetrofitClient.goodItemsCache ?: emptyList()) }
+    val cachedItems by RetrofitClient.goodItemsCache
+    var goodItems by remember(cachedItems) { mutableStateOf<List<GoodItem>>(cachedItems ?: emptyList()) }
     var isLoading by remember { mutableStateOf(goodItems.isEmpty()) }
     var isRefreshing by remember { mutableStateOf(false) }
     var isLoadingMore by remember { mutableStateOf(false) }
@@ -213,7 +214,7 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
                 if (r.isSuccessful) {
                     val items = r.body() ?: emptyList()
                     goodItems = items
-                    RetrofitClient.goodItemsCache = items
+                    RetrofitClient.goodItemsCache.value = items
                     RetrofitClient.cacheTimestamp = System.currentTimeMillis()
                     hasMore = items.size >= 30
                     if (isRefresh) {

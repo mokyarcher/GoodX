@@ -39,7 +39,7 @@ fun SplashScreen(onReady: () -> Unit) {
             try {
                 val r = RetrofitClient.apiService.getGoodItems(sort = "newest", limit = 30)
                 r.body()?.let { items ->
-                    RetrofitClient.goodItemsCache = items
+                    RetrofitClient.goodItemsCache.value = items
                     RetrofitClient.cacheTimestamp = System.currentTimeMillis()
                     val loader = context.imageLoader
                     items.take(6).forEach { item ->
