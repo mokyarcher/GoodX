@@ -48,7 +48,6 @@ import team.sharex.goodx.ui.theme.applyColorScheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        TokenManager.init(this)
         // 应用保存的主题
         applyColorScheme(AppColors.getScheme(TokenManager.getTheme()))
         enableEdgeToEdge()
@@ -147,7 +146,7 @@ fun AppNavigation() {
 
     // Home 常驻底层，详情覆盖上层，保证返回时滚动位置不丢失
     Box(modifier = Modifier.fillMaxSize()) {
-        if (currentScreen !is Screen.Login && currentScreen !is Screen.Register) {
+        if (currentScreen !is Screen.Login && currentScreen !is Screen.Register && currentScreen !is Screen.Splash) {
             HomeScreen(
                 initialTab = homeTab,
                 onTabChanged = { homeTab = it },
