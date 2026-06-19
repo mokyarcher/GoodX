@@ -106,6 +106,7 @@ fun GoodItemDetailScreen(
     var commentText by remember { mutableStateOf("") }
     var isSending by remember { mutableStateOf(false) }
     var replyTarget by remember { mutableStateOf<Comment?>(null) }
+    var isInputFocused by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
 
@@ -342,8 +343,8 @@ fun GoodItemDetailScreen(
                 }
             }
 
-            // 回复状态下，点击内容区域暗面取消回复
-            if (replyTarget != null) {
+            // 回复或评论输入框 focus 时，点击内容区域暗面取消
+            if (replyTarget != null || isInputFocused) {
                 val focusManager = LocalFocusManager.current
                 Box(
                     modifier = Modifier
@@ -367,7 +368,6 @@ fun GoodItemDetailScreen(
                     .background(Surface)
                     .padding(12.dp)
             ) {
-                var isInputFocused by remember { mutableStateOf(false) }
 
                 // 回复目标提示条
                 if (replyTarget != null) {
