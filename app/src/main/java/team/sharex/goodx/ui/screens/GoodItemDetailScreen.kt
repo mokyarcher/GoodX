@@ -1139,53 +1139,42 @@ fun CommentItem(
                     fontSize = 11.sp
                 )
                 Spacer(modifier = Modifier.width(10.dp))
-                LiquidGlassButton(
-                    onClick = { onReply(comment) },
-                    cornerRadius = 10.dp
-                ) {
-                    Text(
-                        text = "回复",
-                        color = TextSecondary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
+                Text(
+                    text = "回复",
+                    color = TextSecondary.copy(alpha = 0.7f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onReply(comment) }
+                )
             }
         }
 
         // 点赞
-        LiquidGlassCard(
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .padding(start = 8.dp, top = 2.dp)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
-                ) { onLike(commentId) },
-            cornerRadius = 12.dp,
-            blurRadius = 16.dp,
-            tintColor = Color.White.copy(alpha = 0.20f),
-            accentColor = Accent,
-            borderAlpha = 0.32f
+                ) { onLike(commentId) }
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
-            ) {
-                val isLiked = comment.likesCount > 0
-                Icon(
-                    imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    contentDescription = null,
-                    tint = if (isLiked) LikeRed else TextSecondary.copy(alpha = 0.55f),
-                    modifier = Modifier.size(if (isReply) 16.dp else 18.dp)
+            val isLiked = comment.likesCount > 0
+            Icon(
+                imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                contentDescription = null,
+                tint = if (isLiked) LikeRed else TextSecondary.copy(alpha = 0.45f),
+                modifier = Modifier.size(if (isReply) 16.dp else 18.dp)
+            )
+            if (isLiked) {
+                Text(
+                    text = "${comment.likesCount}",
+                    color = LikeRed,
+                    fontSize = 10.sp
                 )
-                if (isLiked) {
-                    Text(
-                        text = "${comment.likesCount}",
-                        color = LikeRed,
-                        fontSize = 10.sp
-                    )
-                }
             }
         }
     }
