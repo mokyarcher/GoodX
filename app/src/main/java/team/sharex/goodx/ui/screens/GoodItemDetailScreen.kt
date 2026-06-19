@@ -41,6 +41,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.TextStyle
@@ -103,8 +105,7 @@ fun GoodItemDetailScreen(
     var commentText by remember { mutableStateOf("") }
     var isSending by remember { mutableStateOf(false) }
     var replyTarget by remember { mutableStateOf<Comment?>(null) }
-    var replyText by remember { mutableStateOf("") }
-    var isSendingReply by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
 
     fun loadDetail() {
@@ -331,169 +332,122 @@ fun GoodItemDetailScreen(
                                 } catch (_: Exception) { }
                             }
                         },
-                        onReply = { replyTarget = it }
+                        onReply = {
+                            replyTarget = it
+                            focusRequester.requestFocus()
+                        }
                     )
                 }
             }
 
-            // 回复评论弹窗
-            if (replyTarget != null) {
-                AlertDialog(
-                    onDismissRequest = { replyTarget = null; replyText = "" },
-                    containerColor = Surface,
-                    shape = RoundedCornerShape(20.dp),
-                    title = {
-                        Text(
-                            text = "回复 ${replyTarget?.user?.nickname ?: replyTarget?.user?.username ?: "匿名"}",
-                            color = TextPrimary,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    },
-                    text = {
-                        OutlinedTextField(
-                            value = replyText,
-                            onValueChange = { replyText = it },
-                            placeholder = { Text("写回复...", color = TextSecondary, fontSize = 14.sp) },
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Accent,
-                                unfocusedBorderColor = TextSecondary.copy(alpha = 0.2f),
-                                focusedTextColor = TextPrimary,
-                                unfocusedTextColor = TextPrimary
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    },
-                    confirmButton = {
-                        Button(
-                            onClick = {
-                                if (replyText.isBlank()) return@Button
-                                scope.launch {
-                                    isSendingReply = true
-                                    try {
-                                        val response = RetrofitClient.apiService.addComment(
-                                            id = goodItem.id,
-                                            request = CommentRequest(
-                                                content = replyText.trim(),
-                                                parentId = replyTarget?.id
-                                            )
-                                        )
-                                        if (response.isSuccessful) {
-                                            replyText = ""
-                                            replyTarget = null
-                                            item = response.body()
-                                        }
-                                    } catch (e: Exception) {
-                                        // ignore
-                                    }
-                                    isSendingReply = false
-                                }
-                            },
-                            enabled = !isSendingReply && replyText.isNotBlank(),
-                            colors = ButtonDefaults.buttonColors(containerColor = Accent),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.height(40.dp)
-                        ) {
-                            if (isSendingReply) {
-                                CircularProgressIndicator(
-                                    color = Color.White,
-                                    modifier = Modifier.size(16.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Text("发送", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Medium)
-                            }
-                        }
-                    },
-                    dismissButton = {
-                        OutlinedButton(
-                            onClick = { replyTarget = null; replyText = "" },
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.height(40.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
-                            border = androidx.compose.foundation.BorderStroke(
-                                width = 1.dp,
-                                color = TextSecondary.copy(alpha = 0.3f)
-                            )
-                        ) {
-                            Text("取消", fontSize = 14.sp, color = TextSecondary, fontWeight = FontWeight.Medium)
-                        }
-                    }
-                )
-            }
-
             // 底部评论输入
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Surface)
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(12.dp)
             ) {
                 var isInputFocused by remember { mutableStateOf(false) }
-                BasicTextField(
-                    value = commentText,
-                    onValueChange = { commentText = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(44.dp)
-                        .onFocusChanged { isInputFocused = it.isFocused },
-                    singleLine = true,
-                    textStyle = TextStyle(color = TextPrimary, fontSize = 13.sp),
-                    decorationBox = { innerTextField ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .border(
-                                    width = 1.dp,
-                                    color = if (isInputFocused) Accent else TextSecondary.copy(alpha = 0.2f),
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                                .padding(horizontal = 12.dp),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            if (commentText.isEmpty()) {
-                                Text(
-                                    text = "写评论...",
-                                    color = TextSecondary,
-                                    fontSize = 13.sp
-                                )
-                            }
-                            innerTextField()
-                        }
+
+                // 回复目标提示条
+                if (replyTarget != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "回复 ${replyTarget?.user?.nickname ?: replyTarget?.user?.username ?: "匿名"}",
+                            color = Accent,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "取消",
+                            color = TextSecondary,
+                            fontSize = 13.sp,
+                            modifier = Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { replyTarget = null }
+                        )
                     }
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = {
-                        if (commentText.isBlank()) return@Button
-                        scope.launch {
-                            isSending = true
-                            try {
-                                val response = RetrofitClient.apiService.addComment(
-                                    id = goodItem.id,
-                                    request = CommentRequest(commentText.trim())
-                                )
-                                if (response.isSuccessful) {
-                                    commentText = ""
-                                    item = response.body()
-                                }
-                            } catch (e: Exception) {
-                                // ignore
-                            }
-                            isSending = false
-                        }
-                    },
-                    enabled = !isSending && commentText.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Accent),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.height(44.dp)
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (isSending) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    } else {
-                        Text("发送", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Medium)
+                    BasicTextField(
+                        value = commentText,
+                        onValueChange = { commentText = it },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .focusRequester(focusRequester)
+                            .onFocusChanged { isInputFocused = it.isFocused },
+                        singleLine = true,
+                        textStyle = TextStyle(color = TextPrimary, fontSize = 13.sp),
+                        decorationBox = { innerTextField ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (isInputFocused) Accent else TextSecondary.copy(alpha = 0.2f),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .padding(horizontal = 12.dp),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                if (commentText.isEmpty()) {
+                                    Text(
+                                        text = if (replyTarget != null) "回复一下..." else "写评论...",
+                                        color = TextSecondary,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        }
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            if (commentText.isBlank()) return@Button
+                            scope.launch {
+                                isSending = true
+                                try {
+                                    val response = RetrofitClient.apiService.addComment(
+                                        id = goodItem.id,
+                                        request = CommentRequest(
+                                            content = commentText.trim(),
+                                            parentId = replyTarget?.id
+                                        )
+                                    )
+                                    if (response.isSuccessful) {
+                                        commentText = ""
+                                        replyTarget = null
+                                        item = response.body()
+                                    }
+                                } catch (e: Exception) {
+                                    // ignore
+                                }
+                                isSending = false
+                            }
+                        },
+                        enabled = !isSending && commentText.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Accent),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.height(44.dp)
+                    ) {
+                        if (isSending) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text("发送", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Medium)
+                        }
                     }
                 }
             }
