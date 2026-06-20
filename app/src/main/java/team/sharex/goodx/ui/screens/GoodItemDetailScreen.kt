@@ -1130,7 +1130,7 @@ fun CommentItem(
             comment = reply,
             parentComment = comment,
             onLike = onLike,
-            onReply = { onReply(comment) },
+            onReply = { onReply(reply) },
             isReply = true
         )
     }
