@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const auth = require('../middleware/auth');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 const router = express.Router();
 
@@ -52,7 +53,7 @@ router.get('/users', auth, adminOnly, async (req, res) => {
   }
 });
 
-// 修改用户
+// 修改用户（包含封禁/解封，封禁时发送通知）
 router.put('/users/:id', auth, adminOnly, async (req, res) => {
   try {
     const { nickname, password, banned } = req.body;
@@ -66,6 +67,17 @@ router.put('/users/:id', auth, adminOnly, async (req, res) => {
     }
 
     await user.save();
+
+    // 如果被封禁，发送系统通知
+    if (banned === true) {
+      await Notification.create({
+        recipient: user._id,
+        type: 'system',
+        title: '账号已被封禁',
+        message: '你的账号已被管理员封禁。封禁期间可以浏览帖子，但无法发布帖子、评论、点赞等。如有疑问请联系管理员。'
+      });
+    }
+
     res.json({ message: '修改成功' });
   } catch (error) {
     res.status(500).json({ message: error.message });
