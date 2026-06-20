@@ -243,7 +243,10 @@ fun DiscoverTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier = Mod
                     if (items.isEmpty()) {
                         hasMore = false
                     } else {
-                        goodItems = goodItems + items
+                        // 过滤掉已存在的ID，防止LazyColumn key重复
+                        val existingIds = goodItems.map { it.id }.toSet()
+                        val newItems = items.filter { it.id !in existingIds }
+                        goodItems = goodItems + newItems
                         currentPage = nextPage
                         hasMore = items.size >= 20
                     }
