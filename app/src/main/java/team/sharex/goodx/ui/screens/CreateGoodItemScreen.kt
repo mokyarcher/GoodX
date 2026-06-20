@@ -161,7 +161,12 @@ fun CreateGoodItemScreen(
                             onPublished()
                             return@launch
                         } else {
-                            error = "发布失败: ${response.errorMessage()}"
+                            val errMsg = response.errorMessage()
+                            if (errMsg.contains("封禁")) {
+                                error = "账号已被封禁，无法发布帖子"
+                            } else {
+                                error = "发布失败: $errMsg"
+                            }
                         }
                     } catch (_: Exception) {
                         error = "网络错误，点击重试"

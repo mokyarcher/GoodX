@@ -107,6 +107,7 @@ fun GoodItemDetailScreen(
     var isSending by remember { mutableStateOf(false) }
     var replyTarget by remember { mutableStateOf<Comment?>(null) }
     var isInputFocused by remember { mutableStateOf(false) }
+    var showBannedToast by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
 
@@ -129,6 +130,14 @@ fun GoodItemDetailScreen(
     }
 
     LaunchedEffect(itemId) { loadDetail() }
+
+    val context = LocalContext.current
+    LaunchedEffect(showBannedToast) {
+        if (showBannedToast) {
+            Toast.makeText(context, "账号已被封禁，无法发表评论", Toast.LENGTH_LONG).show()
+            showBannedToast = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -443,6 +452,11 @@ fun GoodItemDetailScreen(
                                         commentText = ""
                                         replyTarget = null
                                         item = response.body()
+                                    } else {
+                                        val errMsg = response.errorMessage()
+                                        if (errMsg.contains("封禁")) {
+                                            showBannedToast = true
+                                        }
                                     }
                                 } catch (e: Exception) {
                                     // ignore
