@@ -11,6 +11,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -59,6 +60,7 @@ import java.net.URL
 import team.sharex.goodx.data.remote.CommentRequest
 import team.sharex.goodx.data.remote.RetrofitClient
 import team.sharex.goodx.data.remote.errorMessage
+import team.sharex.goodx.data.remote.TokenManager
 import team.sharex.goodx.model.Comment
 import team.sharex.goodx.model.GoodItem
 import team.sharex.goodx.model.displayName
@@ -349,6 +351,20 @@ fun GoodItemDetailScreen(
                             replyTarget = it
                             android.util.Log.d("GoodX-Reply", "replyTarget set to: id=${replyTarget?.id}, user=${replyTarget?.user?.nickname ?: replyTarget?.user?.username ?: "匿名"}")
                             focusRequester.requestFocus()
+                        },
+                        onDelete = { comment ->
+                            scope.launch {
+                                try {
+                                    val r = RetrofitClient.apiService.deleteComment(goodItem.id, comment.id ?: "")
+                                    if (r.isSuccessful) {
+                                        item = r.body()
+                                        Toast.makeText(context, "评论已删除", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        val errMsg = r.errorMessage()
+                                        Toast.makeText(context, errMsg, Toast.LENGTH_SHORT).show()
+                                    }
+                                } catch (_: Exception) { }
+                            }
                         }
                     )
                 }
@@ -945,7 +961,8 @@ fun CommentSection(
     comments: List<Comment>,
     commentsCount: Int,
     onLike: (String) -> Unit,
-    onReply: (Comment) -> Unit
+    onReply: (Comment) -> Unit,
+    onDelete: (Comment) -> Unit = {}
 ) {
     Column {
         Text(
@@ -976,7 +993,8 @@ fun CommentSection(
                             comment = comment,
                             onLike = onLike,
                             onReply = onReply,
-                            rootOnReply = onReply  // 根级 onReply
+                            onDelete = onDelete,
+                            rootOnReply = onReply
                         )
                     }
                 }
@@ -994,151 +1012,177 @@ fun CommentItem(
     parentComment: Comment? = null,
     onLike: (String) -> Unit = {},
     onReply: (Comment) -> Unit = {},
-    rootOnReply: (Comment) -> Unit = onReply,  // 始终指向根级 onReply
+    onDelete: (Comment) -> Unit = {},
+    rootOnReply: (Comment) -> Unit = onReply,
     isReply: Boolean = false
 ) {
     val commentId = comment.id.orEmpty()
     val context = LocalContext.current
+    val currentUserId = TokenManager.getUserId()
+    val isMyComment = comment.user?.id == currentUserId
+    var showMenu by remember { mutableStateOf(false) }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                start = if (isReply) 32.dp else 0.dp,
-                end = 0.dp,
-                top = if (isReply) 4.dp else 6.dp,
-                bottom = if (isReply) 4.dp else 6.dp
-            )
-            .clickable { onReply(comment) },
-        verticalAlignment = Alignment.Top
-    ) {
-        // 头像
-        val avatarSize = if (isReply) 26.dp else 36.dp
-        val avatarUrl = comment.user?.avatar
-        Box(
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
             modifier = Modifier
-                .size(avatarSize)
-                .clip(androidx.compose.foundation.shape.CircleShape)
-                .background(TextSecondary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(
+                    start = if (isReply) 32.dp else 0.dp,
+                    end = 0.dp,
+                    top = if (isReply) 4.dp else 6.dp,
+                    bottom = if (isReply) 4.dp else 6.dp
+                )
+                .combinedClickable(
+                    onClick = { onReply(comment) },
+                    onLongClick = {
+                        if (isMyComment) showMenu = true
+                    }
+                ),
+            verticalAlignment = Alignment.Top
         ) {
-            if (!avatarUrl.isNullOrBlank()) {
-                val avatarThumbUrl = if (avatarUrl.startsWith("http")) avatarUrl
-                else "$GOODX_BASE_URL/api/upload/thumb/${avatarUrl.substringAfterLast('/')}"
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(avatarThumbUrl)
-                        .size(72, 72)
-                        .scale(Scale.FIT)
-                        .crossfade(80)
-                        .memoryCacheKey("avatar-thumb:$avatarUrl")
-                        .diskCacheKey("avatar-thumb:$avatarUrl")
-                        .build(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                )
-            } else {
-                Text(
-                    text = (comment.user?.nickname ?: comment.user?.username ?: "?").first().uppercase(),
-                    color = Accent,
-                    fontSize = if (isReply) 10.sp else 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
+            // 头像
+            val avatarSize = if (isReply) 26.dp else 36.dp
+            val avatarUrl = comment.user?.avatar
+            Box(
+                modifier = Modifier
+                    .size(avatarSize)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(TextSecondary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!avatarUrl.isNullOrBlank()) {
+                    val avatarThumbUrl = if (avatarUrl.startsWith("http")) avatarUrl
+                    else "$GOODX_BASE_URL/api/upload/thumb/${avatarUrl.substringAfterLast('/')}"
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(avatarThumbUrl)
+                            .size(72, 72)
+                            .scale(Scale.FIT)
+                            .crossfade(80)
+                            .memoryCacheKey("avatar-thumb:$avatarUrl")
+                            .diskCacheKey("avatar-thumb:$avatarUrl")
+                            .build(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text = (comment.user?.nickname ?: comment.user?.username ?: "?").first().uppercase(),
+                        color = Accent,
+                        fontSize = if (isReply) 10.sp else 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
-        // 中间内容
-        Column(modifier = Modifier.weight(1f)) {
-            // 昵称行：回复显示「回复者 ▶ 被回复者」
-            if (isReply && parentComment != null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            // 中间内容
+            Column(modifier = Modifier.weight(1f)) {
+                // 昵称行：回复显示「回复者 ▶ 被回复者」
+                if (isReply && parentComment != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = comment.user?.nickname ?: comment.user?.username ?: "匿名",
+                            color = TextPrimary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "▶",
+                            color = Accent.copy(alpha = 0.8f),
+                            fontSize = 9.sp
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = parentComment.user?.nickname ?: parentComment.user?.username ?: "匿名",
+                            color = Accent.copy(alpha = 0.8f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                } else {
                     Text(
-                        text = comment.user?.nickname ?: comment.user?.username ?: "匿名",
+                        text = comment.user?.nickname ?: comment.user?.username ?: "匿名用户",
                         color = TextPrimary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "▶",
-                        color = Accent.copy(alpha = 0.8f),
-                        fontSize = 9.sp
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = parentComment.user?.nickname ?: parentComment.user?.username ?: "匿名",
-                        color = Accent.copy(alpha = 0.8f),
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
-            } else {
+
+                Spacer(modifier = Modifier.height(2.dp))
+
                 Text(
-                    text = comment.user?.nickname ?: comment.user?.username ?: "匿名用户",
+                    text = comment.content.orEmpty(),
                     color = TextPrimary,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
+                    fontSize = if (isReply) 12.sp else 13.sp,
+                    lineHeight = 18.sp
                 )
+
+                Spacer(modifier = Modifier.height(3.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = formatTimeAgo(comment.createdAt),
+                        color = TextSecondary.copy(alpha = 0.5f),
+                        fontSize = 11.sp
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "回复",
+                        color = TextSecondary.copy(alpha = 0.7f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onReply(comment) }
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(2.dp))
-
-            Text(
-                text = comment.content.orEmpty(),
-                color = TextPrimary,
-                fontSize = if (isReply) 12.sp else 13.sp,
-                lineHeight = 18.sp
-            )
-
-            Spacer(modifier = Modifier.height(3.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = formatTimeAgo(comment.createdAt),
-                    color = TextSecondary.copy(alpha = 0.5f),
-                    fontSize = 11.sp
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = "回复",
-                    color = TextSecondary.copy(alpha = 0.7f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.clickable(
+            // 点赞
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .padding(start = 8.dp, top = 2.dp)
+                    .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
-                    ) { onReply(comment) }
+                    ) { onLike(commentId) }
+            ) {
+                val isLiked = comment.likesCount > 0
+                Icon(
+                    imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = null,
+                    tint = if (isLiked) LikeRed else TextSecondary.copy(alpha = 0.45f),
+                    modifier = Modifier.size(if (isReply) 16.dp else 18.dp)
                 )
+                if (isLiked) {
+                    Text(
+                        text = "${comment.likesCount}",
+                        color = LikeRed,
+                        fontSize = 10.sp
+                    )
+                }
             }
         }
 
-        // 点赞
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .padding(start = 8.dp, top = 2.dp)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) { onLike(commentId) }
+        // 长按菜单
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false },
+            modifier = Modifier.background(Surface)
         ) {
-            val isLiked = comment.likesCount > 0
-            Icon(
-                imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                contentDescription = null,
-                tint = if (isLiked) LikeRed else TextSecondary.copy(alpha = 0.45f),
-                modifier = Modifier.size(if (isReply) 16.dp else 18.dp)
+            DropdownMenuItem(
+                text = { Text("删除", color = LikeRed) },
+                onClick = {
+                    showMenu = false
+                    onDelete(comment)
+                }
             )
-            if (isLiked) {
-                Text(
-                    text = "${comment.likesCount}",
-                    color = LikeRed,
-                    fontSize = 10.sp
-                )
-            }
         }
     }
 
@@ -1148,7 +1192,8 @@ fun CommentItem(
             comment = reply,
             parentComment = comment,
             onLike = onLike,
-            onReply = { rootOnReply(reply) },  // 使用 rootOnReply，避免嵌套污染
+            onReply = { rootOnReply(reply) },
+            onDelete = onDelete,
             rootOnReply = rootOnReply,
             isReply = true
         )

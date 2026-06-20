@@ -272,6 +272,33 @@ router.post('/:id/comment/:commentId/like', auth, checkBanned, async (req, res) 
   }
 });
 
+// 删除评论（只能删除自己的评论）
+router.delete('/:id/comment/:commentId', auth, async (req, res) => {
+  try {
+    const goodItem = await GoodItem.findById(req.params.id);
+    if (!goodItem) return res.status(404).json({ message: '帖子不存在' });
+
+    const comment = goodItem.comments.id(req.params.commentId);
+    if (!comment) return res.status(404).json({ message: '评论不存在' });
+
+    // 只能删除自己的评论
+    if (comment.user.toString() !== req.userId) {
+      return res.status(403).json({ message: '无权删除他人评论' });
+    }
+
+    goodItem.comments.pull({ _id: req.params.commentId });
+    await goodItem.save();
+
+    const updated = await GoodItem.findById(req.params.id)
+      .populate('author', 'username nickname avatar')
+      .populate('comments.user', 'username nickname avatar');
+
+    res.json(formatGoodItem(updated));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // 用户提交审核（封禁用户禁止提交）
 router.put('/:id/submit-review', auth, checkBanned, async (req, res) => {
   try {

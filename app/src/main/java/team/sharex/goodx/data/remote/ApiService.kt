@@ -101,6 +101,9 @@ interface ApiService {
     @POST("api/good-items/{id}/comment/{commentId}/like")
     suspend fun likeComment(@Path("id") id: String, @Path("commentId") commentId: String): Response<GoodItem>
 
+    @DELETE("api/good-items/{id}/comment/{commentId}")
+    suspend fun deleteComment(@Path("id") id: String, @Path("commentId") commentId: String): Response<GoodItem>
+
     // Version
     @GET("api/version")
     suspend fun getVersion(): Response<VersionInfo>
