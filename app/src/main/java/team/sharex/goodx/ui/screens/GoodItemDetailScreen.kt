@@ -110,6 +110,7 @@ fun GoodItemDetailScreen(
     var replyTarget by remember { mutableStateOf<Comment?>(null) }
     var isInputFocused by remember { mutableStateOf(false) }
     var showBannedToast by remember { mutableStateOf(false) }
+    var commentToDelete by remember { mutableStateOf<Comment?>(null) }  // 待删除的评论
     val focusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
 
@@ -353,18 +354,7 @@ fun GoodItemDetailScreen(
                             focusRequester.requestFocus()
                         },
                         onDelete = { comment ->
-                            scope.launch {
-                                try {
-                                    val r = RetrofitClient.apiService.deleteComment(goodItem.id, comment.id ?: "")
-                                    if (r.isSuccessful) {
-                                        item = r.body()
-                                        Toast.makeText(context, "评论已删除", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        val errMsg = r.errorMessage()
-                                        Toast.makeText(context, errMsg, Toast.LENGTH_SHORT).show()
-                                    }
-                                } catch (_: Exception) { }
-                            }
+                            commentToDelete = comment  // 设置待删除评论，触发确认对话框
                         }
                     )
                 }
@@ -492,6 +482,45 @@ fun GoodItemDetailScreen(
                         }
                     }
                 }
+            }
+
+            // 删除评论确认对话框
+            if (commentToDelete != null) {
+                AlertDialog(
+                    onDismissRequest = { commentToDelete = null },
+                    containerColor = Surface,
+                    shape = RoundedCornerShape(20.dp),
+                    title = { Text("删除评论", color = TextPrimary, fontWeight = FontWeight.Bold) },
+                    text = { Text("确定要删除这条评论吗？", color = TextSecondary) },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                val deleteComment = commentToDelete
+                                commentToDelete = null
+                                if (deleteComment != null) {
+                                    scope.launch {
+                                        try {
+                                            val r = RetrofitClient.apiService.deleteComment(goodItem.id, deleteComment.id ?: "")
+                                            if (r.isSuccessful) {
+                                                item = r.body()
+                                                Toast.makeText(context, "评论已删除", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                Toast.makeText(context, r.errorMessage(), Toast.LENGTH_SHORT).show()
+                                            }
+                                        } catch (_: Exception) { }
+                                    }
+                                }
+                            }
+                        ) {
+                            Text("删除", color = LikeRed, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { commentToDelete = null }) {
+                            Text("取消", color = TextSecondary)
+                        }
+                    }
+                )
             }
         }
     }
@@ -1140,6 +1169,20 @@ fun CommentItem(
                             indication = null
                         ) { onReply(comment) }
                     )
+                    // 自己的评论显示删除按钮
+                    if (isMyComment) {
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "删除",
+                            color = LikeRed.copy(alpha = 0.8f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { onDelete(comment) }
+                        )
+                    }
                 }
             }
 
