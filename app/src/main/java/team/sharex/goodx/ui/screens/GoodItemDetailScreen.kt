@@ -1009,22 +1009,24 @@ fun CommentSection(
             )
         } else {
             comments.forEachIndexed { index, comment ->
-                LiquidGlassCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    cornerRadius = 16.dp,
-                    blurRadius = 24.dp,
-                    tintColor = Color.White.copy(alpha = 0.24f),
-                    accentColor = Accent,
-                    borderAlpha = 0.38f
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
-                        CommentItem(
-                            comment = comment,
-                            onLike = onLike,
-                            onReply = onReply,
-                            onDelete = onDelete,
-                            rootOnReply = onReply
-                        )
+                key(comment.id) {  // 为每个评论提供唯一key
+                    LiquidGlassCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        cornerRadius = 16.dp,
+                        blurRadius = 24.dp,
+                        tintColor = Color.White.copy(alpha = 0.24f),
+                        accentColor = Accent,
+                        borderAlpha = 0.38f
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
+                            CommentItem(
+                                comment = comment,
+                                onLike = onLike,
+                                onReply = onReply,
+                                onDelete = onDelete,
+                                rootOnReply = onReply
+                            )
+                        }
                     }
                 }
                 if (index < comments.lastIndex) {
