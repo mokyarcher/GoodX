@@ -1,11 +1,11 @@
 const express = require('express');
-const auth = require('../middleware/auth');
+const { auth, checkBanned } = require('../middleware/auth');
 const GoodItem = require('../models/GoodItem');
 
 const router = express.Router();
 
-// 发布好物
-router.post('/', auth, async (req, res) => {
+// 发布好物（封禁用户禁止发帖）
+router.post('/', auth, checkBanned, async (req, res) => {
   try {
     const { title, description, contentType, category, subCategory, images, link } = req.body;
     const normalizedCategory = category.toLowerCase();
@@ -92,8 +92,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// 修改好物
-router.put('/:id', auth, async (req, res) => {
+// 修改好物（封禁用户禁止修改）
+router.put('/:id', auth, checkBanned, async (req, res) => {
   try {
     const { title, description, contentType, category, subCategory, images, link } = req.body;
 
@@ -127,8 +127,8 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// 删除好物
-router.delete('/:id', auth, async (req, res) => {
+// 删除好物（封禁用户禁止删除）
+router.delete('/:id', auth, checkBanned, async (req, res) => {
   try {
     const goodItem = await GoodItem.findById(req.params.id);
     if (!goodItem) {
@@ -146,8 +146,8 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
-// 点赞
-router.post('/:id/like', auth, async (req, res) => {
+// 点赞（封禁用户禁止点赞）
+router.post('/:id/like', auth, checkBanned, async (req, res) => {
   try {
     const goodItem = await GoodItem.findById(req.params.id);
     if (!goodItem) {
@@ -173,8 +173,8 @@ router.post('/:id/like', auth, async (req, res) => {
   }
 });
 
-// 评论
-router.post('/:id/comment', auth, async (req, res) => {
+// 评论（封禁用户禁止评论）
+router.post('/:id/comment', auth, checkBanned, async (req, res) => {
   try {
     const { content, parentId } = req.body;
     if (!content || content.trim().length === 0) {
@@ -247,8 +247,8 @@ function latestInteraction(item) {
   return null;
 }
 
-// 评论点赞/取消
-router.post('/:id/comment/:commentId/like', auth, async (req, res) => {
+// 评论点赞/取消（封禁用户禁止点赞）
+router.post('/:id/comment/:commentId/like', auth, checkBanned, async (req, res) => {
   try {
     const goodItem = await GoodItem.findById(req.params.id);
     if (!goodItem) return res.status(404).json({ message: '帖子不存在' });
@@ -272,8 +272,8 @@ router.post('/:id/comment/:commentId/like', auth, async (req, res) => {
   }
 });
 
-// 用户提交审核（编辑后申请重新上架）
-router.put('/:id/submit-review', auth, async (req, res) => {
+// 用户提交审核（封禁用户禁止提交）
+router.put('/:id/submit-review', auth, checkBanned, async (req, res) => {
   try {
     const goodItem = await GoodItem.findById(req.params.id);
     if (!goodItem) return res.status(404).json({ message: '帖子不存在' });

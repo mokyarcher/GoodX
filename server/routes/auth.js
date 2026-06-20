@@ -73,6 +73,7 @@ router.post('/login', async (req, res) => {
         nickname: user.nickname,
         avatar: user.avatar,
         inviteCode: user.inviteCode,
+        banned: user.banned,  // 返回封禁状态
         createdAt: user.createdAt?.getTime() || Date.now()
       }
     });
@@ -94,6 +95,7 @@ router.get('/me', auth, async (req, res) => {
       nickname: user.nickname,
       avatar: user.avatar,
       inviteCode: user.inviteCode,
+      banned: user.banned,  // 返回封禁状态
       createdAt: user.createdAt?.getTime() || Date.now()
     });
   } catch (error) {

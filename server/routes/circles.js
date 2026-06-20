@@ -1,13 +1,13 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const auth = require('../middleware/auth');
+const { auth, checkBanned } = require('../middleware/auth');
 const Circle = require('../models/Circle');
 const User = require('../models/User');
 
 const router = express.Router();
 
-// 创建圈子
-router.post('/', auth, async (req, res) => {
+// 创建圈子（封禁用户禁止创建）
+router.post('/', auth, checkBanned, async (req, res) => {
   try {
     const { name, description, maxMembers } = req.body;
 
@@ -43,8 +43,8 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// 通过邀请码加入圈子 (兼容前端 POST /:id/join)
-router.post('/:id/join', auth, async (req, res) => {
+// 通过邀请码加入圈子（封禁用户禁止加入）
+router.post('/:id/join', auth, checkBanned, async (req, res) => {
   try {
     const { inviteCode } = req.body;
 
