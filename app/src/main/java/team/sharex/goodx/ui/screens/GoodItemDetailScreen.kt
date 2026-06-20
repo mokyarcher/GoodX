@@ -338,6 +338,7 @@ fun GoodItemDetailScreen(
                         onReply = {
                             android.util.Log.d("GoodX-Reply", "onReply clicked: commentId=${it.id}, user=${it.user?.nickname ?: it.user?.username ?: "匿名"}, parentId=${it.parentId}")
                             replyTarget = it
+                            android.util.Log.d("GoodX-Reply", "replyTarget set to: id=${replyTarget?.id}, user=${replyTarget?.user?.nickname ?: replyTarget?.user?.username ?: "匿名"}")
                             focusRequester.requestFocus()
                         }
                     )
@@ -960,7 +961,8 @@ fun CommentSection(
                         CommentItem(
                             comment = comment,
                             onLike = onLike,
-                            onReply = onReply
+                            onReply = onReply,
+                            rootOnReply = onReply  // 根级 onReply
                         )
                     }
                 }
@@ -978,6 +980,7 @@ fun CommentItem(
     parentComment: Comment? = null,
     onLike: (String) -> Unit = {},
     onReply: (Comment) -> Unit = {},
+    rootOnReply: (Comment) -> Unit = onReply,  // 始终指向根级 onReply
     isReply: Boolean = false
 ) {
     val commentId = comment.id.orEmpty()
@@ -1131,7 +1134,8 @@ fun CommentItem(
             comment = reply,
             parentComment = comment,
             onLike = onLike,
-            onReply = { onReply(reply) },
+            onReply = { rootOnReply(reply) },  // 使用 rootOnReply，避免嵌套污染
+            rootOnReply = rootOnReply,
             isReply = true
         )
     }
