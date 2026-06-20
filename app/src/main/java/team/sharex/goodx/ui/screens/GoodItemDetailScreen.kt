@@ -336,6 +336,7 @@ fun GoodItemDetailScreen(
                             }
                         },
                         onReply = {
+                            android.util.Log.d("GoodX-Reply", "onReply clicked: commentId=${it.id}, user=${it.user?.nickname ?: it.user?.username ?: "匿名"}, parentId=${it.parentId}")
                             replyTarget = it
                             focusRequester.requestFocus()
                         }

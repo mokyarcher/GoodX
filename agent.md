@@ -159,9 +159,9 @@ app/build/outputs/apk/debug/app-debug.apk
    - 禁止复用 `goodx.apk`，避免 ColorOS / FileProvider / 系统安装器缓存旧包
    - `/api/version` 的 `apkUrl` 必须指向带版本号的文件名，例如：
      ```text
+     服务器IP:111.229.166.216
      http://111.229.166.216:3002/apk/goodx/goodx-v59.apk?v=59
      ```
-
 3. **部署后验证**
    - 服务器 `/api/version` 返回的 `version`、`versionCode`、`apkUrl` 正确
    - 下载站 `https://www.sharex.team/download/goodx/` 版本信息已更新
