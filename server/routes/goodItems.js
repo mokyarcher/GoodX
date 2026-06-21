@@ -5,14 +5,8 @@ const User = require('../models/User');
 
 const router = express.Router();
 
-// 违禁词列表（可扩展）
-const SENSITIVE_WORDS = [
-  '赌博', '博彩', '色情', '淫秽', '毒品', '吸毒', '贩毒', '枪支', '弹药',
-  '爆炸物', '恐怖袭击', '自杀', '杀人', '强奸', '猥亵', '诈骗', '传销',
-  '洗钱', '黑客', '盗取', '窃取', '翻墙', 'VPN', '代理', '加速器',
-  '法轮功', '台独', '港独', '疆独', '藏独', '反华', '颠覆', '暴乱',
-  '游行', '示威', '集会', '罢工', '罢课', '罢市'
-];
+// 加载违禁词库（从 JSON 文件读取，方便手动管理）
+const SENSITIVE_WORDS = require('../config/sensitive-words.json').words;
 
 function containsSensitiveWords(text) {
   if (!text) return false;
