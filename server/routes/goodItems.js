@@ -81,16 +81,13 @@ router.get('/', auth, async (req, res) => {
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
-    // 如果查询收藏，需要给每个 item 附加 favoritedBy 信息
-    if (favorites === 'true') {
-      const user = await User.findById(req.userId);
-      const favSet = new Set((user.favorites || []).map(id => id.toString()));
-      goodItems.forEach(item => {
-        item.favoritedBy = Array.from(favSet);
-      });
-    }
+    // 查询当前用户的收藏集合，用于 isFavorited 判断
+    const currentUser = await User.findById(req.userId);
+    const favSet = currentUser && currentUser.favorites
+      ? new Set(currentUser.favorites.map(id => id.toString()))
+      : new Set();
 
-    res.json(goodItems.map(item => formatGoodItem(item, req.userId)));
+    res.json(goodItems.map(item => formatGoodItem(item, req.userId, favSet)));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -107,7 +104,13 @@ router.get('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: '好物不存在' });
     }
 
-    res.json(formatGoodItem(goodItem, req.userId));
+    // 查询当前用户的收藏集合
+    const currentUser = await User.findById(req.userId);
+    const favSet = currentUser && currentUser.favorites
+      ? new Set(currentUser.favorites.map(id => id.toString()))
+      : new Set();
+
+    res.json(formatGoodItem(goodItem, req.userId, favSet));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -130,7 +133,9 @@ router.post('/:id/favorite', auth, async (req, res) => {
       await user.save();
     }
 
-    res.json(formatGoodItem(goodItem, req.userId));
+    // 收藏后，该 item 对当前用户一定是已收藏状态
+    const favSet = new Set(user.favorites.map(id => id.toString()));
+    res.json(formatGoodItem(goodItem, req.userId, favSet));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -150,7 +155,9 @@ router.delete('/:id/favorite', auth, async (req, res) => {
       await user.save();
     }
 
-    res.json(formatGoodItem(goodItem, req.userId));
+    // 取消收藏后，该 item 对当前用户一定不是已收藏状态
+    const favSet = new Set((user.favorites || []).map(id => id.toString()));
+    res.json(formatGoodItem(goodItem, req.userId, favSet));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -231,7 +238,7 @@ router.post('/:id/like', auth, checkBanned, async (req, res) => {
       .populate('author', 'username nickname avatar')
       .populate('comments.user', 'username nickname avatar');
 
-    res.json(formatGoodItem(updatedItem));
+    res.json(formatGoodItem(updatedItem, req.userId));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -267,7 +274,7 @@ router.post('/:id/comment', auth, checkBanned, async (req, res) => {
     await goodItem.save();
     await goodItem.populate('comments.user', 'username nickname avatar');
 
-    res.status(201).json(formatGoodItem(goodItem));
+    res.status(201).json(formatGoodItem(goodItem, req.userId));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -330,7 +337,7 @@ router.post('/:id/comment/:commentId/like', auth, checkBanned, async (req, res) 
       .populate('author', 'username nickname avatar')
       .populate('comments.user', 'username nickname avatar');
 
-    res.json(formatGoodItem(updated));
+    res.json(formatGoodItem(updated, req.userId));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -357,7 +364,7 @@ router.delete('/:id/comment/:commentId', auth, async (req, res) => {
       .populate('author', 'username nickname avatar')
       .populate('comments.user', 'username nickname avatar');
 
-    res.json(formatGoodItem(updated));
+    res.json(formatGoodItem(updated, req.userId));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -420,7 +427,7 @@ router.put('/:id/submit-review', auth, checkBanned, async (req, res) => {
 });
 
 // 格式化好物数据
-async function formatGoodItem(item, currentUserId = null) {
+function formatGoodItem(item, currentUserId = null, favSet = null) {
   const result = {
     id: item._id.toString(),
     title: item.title,
@@ -446,12 +453,9 @@ async function formatGoodItem(item, currentUserId = null) {
     createdAt: item.createdAt?.getTime() || Date.now()
   };
 
-  // 如果传入了当前用户ID，检查是否已收藏
-  if (currentUserId) {
-    const user = await User.findById(currentUserId);
-    if (user && user.favorites) {
-      result.isFavorited = user.favorites.some(id => id.toString() === item._id.toString());
-    }
+  // 如果传入了收藏集合，检查是否已收藏
+  if (favSet && currentUserId) {
+    result.isFavorited = favSet.has(item._id.toString());
   }
 
   return result;
