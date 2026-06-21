@@ -547,7 +547,7 @@ fun ProfileTab(
         Spacer(modifier = Modifier.height(12.dp))
 
         if (isAdmin) {
-            OutlinedButton(onClick = onAdminClick, colors = ButtonDefaults.outlinedButtonColors(contentColor = LikeRed), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(LikeRed.copy(alpha = 0.3f))), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("🛡️ 后台管理", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
+            OutlinedButton(onClick = onAdminClick, colors = ButtonDefaults.outlinedButtonColors(contentColor = LikeRed), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(LikeRed.copy(alpha = 0.3f))), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("后台管理", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
             Spacer(modifier = Modifier.height(12.dp))
         }
 

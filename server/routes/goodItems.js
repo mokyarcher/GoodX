@@ -252,6 +252,13 @@ router.post('/:id/comment', auth, checkBanned, async (req, res) => {
       return res.status(400).json({ message: '评论内容不能为空' });
     }
 
+    const trimmedContent = content.trim();
+
+    // 违禁词检测
+    if (containsSensitiveWords(trimmedContent)) {
+      return res.status(400).json({ message: '评论包含违规内容，禁止发布' });
+    }
+
     const goodItem = await GoodItem.findById(req.params.id);
     if (!goodItem) {
       return res.status(404).json({ message: '好物不存在' });
@@ -267,7 +274,7 @@ router.post('/:id/comment', auth, checkBanned, async (req, res) => {
 
     goodItem.comments.push({
       user: req.userId,
-      content: content.trim(),
+      content: trimmedContent,
       parentId: parentId || null
     });
 

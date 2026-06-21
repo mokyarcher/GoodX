@@ -484,6 +484,8 @@ fun GoodItemDetailScreen(
                                         val errMsg = response.errorMessage()
                                         if (errMsg.contains("封禁")) {
                                             showBannedToast = true
+                                        } else if (errMsg.contains("违规")) {
+                                            Toast.makeText(context, errMsg, Toast.LENGTH_LONG).show()
                                         }
                                     }
                                 } catch (e: Exception) {
