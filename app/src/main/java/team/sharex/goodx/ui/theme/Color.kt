@@ -32,7 +32,7 @@ var Border by mutableStateOf(Color(0xFFD0ECEA))
 var Divider by mutableStateOf(Color(0xFFD0ECEA))
 
 // 功能色
-var LikeRed by mutableStateOf(Color(0xFFFF3B30))
+var LikeRed by mutableStateOf(Color(0xFF0ABAB5))
 
 // ============================================
 // 颜色方案数据类
