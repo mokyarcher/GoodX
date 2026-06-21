@@ -102,7 +102,9 @@ fun HomeScreen(
     onContentTypeClick: (ContentType) -> Unit = {},
     onGoodItemClick: (String) -> Unit = {},
     onMyPostsClick: () -> Unit = {},
+    onMyFavoritesClick: () -> Unit = {},
     onNotificationsClick: () -> Unit = {},
+    onAboutClick: () -> Unit = {},
     onPublishClick: () -> Unit = {},
     onEditProfileClick: () -> Unit = {},
     onAdminClick: () -> Unit = {}
@@ -142,7 +144,7 @@ fun HomeScreen(
                 HomeTab.DISCOVER -> DiscoverTab(onGoodItemClick = onGoodItemClick, modifier = Modifier.fillMaxSize())
                 HomeTab.ALL -> AllCategoriesTab(onGoodItemClick = onGoodItemClick, modifier = Modifier.fillMaxSize())
                 HomeTab.CIRCLES -> CirclesTab(modifier = Modifier.fillMaxSize())
-                HomeTab.PROFILE -> ProfileTab(onLogout = onLogout, onMyPostsClick = onMyPostsClick, onPublishClick = onPublishClick, onEditProfileClick = onEditProfileClick, onAdminClick = onAdminClick, onNotificationsClick = onNotificationsClick, modifier = Modifier.fillMaxSize())
+                HomeTab.PROFILE -> ProfileTab(onLogout = onLogout, onMyPostsClick = onMyPostsClick, onMyFavoritesClick = onMyFavoritesClick, onEditProfileClick = onEditProfileClick, onAdminClick = onAdminClick, onNotificationsClick = onNotificationsClick, onAboutClick = onAboutClick, modifier = Modifier.fillMaxSize())
             }
         }
     }
@@ -428,7 +430,8 @@ fun AllCategoriesTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier 
 
     LaunchedEffect(selectedType) { loadItems() }
 
-    Column(modifier = modifier.fillMaxSize().background(Background)) {
+    LiquidGlassBackdrop(modifier = modifier.fillMaxSize(), baseColor = Background, accentColor = Accent) {
+    Column(modifier = Modifier.fillMaxSize()) {
         Text("全部", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp))
 
         // 顶部大类选择器
@@ -446,6 +449,7 @@ fun AllCategoriesTab(onGoodItemClick: (String) -> Unit = {}, modifier: Modifier 
         else LazyColumn(modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(goodItems, key = { it.id }) { item -> GoodItemCard(item = item, onClick = { cacheGoodItemPreview(item); onGoodItemClick(item.id) }) }
         }
+    }
     }
 }
 
@@ -481,7 +485,8 @@ fun CirclesTab(modifier: Modifier = Modifier) {
     var newCircleName by remember { mutableStateOf("") }
     val myName = TokenManager.getNickname() ?: TokenManager.getUsername() ?: "我"
 
-    Column(modifier = modifier.fillMaxSize().background(Background).padding(horizontal = 20.dp)) {
+    LiquidGlassBackdrop(modifier = modifier.fillMaxSize(), baseColor = Background, accentColor = Accent) {
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
         Text("圈子", color = TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
         Text("创建或加入兴趣圈子", color = TextSecondary, fontSize = 13.sp, modifier = Modifier.padding(bottom = 16.dp))
         Button(onClick = { showCreate = true }, colors = ButtonDefaults.buttonColors(containerColor = Accent), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("创建圈子", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
@@ -496,6 +501,7 @@ fun CirclesTab(modifier: Modifier = Modifier) {
             }}
         }
     }
+    }
     if (showCreate) AlertDialog(onDismissRequest = { showCreate = false }, containerColor = Surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.padding(horizontal = 32.dp), title = { Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Text("创建圈子", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp) } }, text = { OutlinedTextField(value = newCircleName, onValueChange = { newCircleName = it }, placeholder = { Text("圈子名称", color = TextSecondary.copy(alpha = 0.5f)) }, singleLine = true, colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Accent, unfocusedBorderColor = TextSecondary.copy(alpha = 0.2f)), modifier = Modifier.fillMaxWidth()) }, confirmButton = { TextButton(onClick = { if (newCircleName.isNotBlank()) { circles = circles + CircleData(newCircleName.trim(), mutableListOf(myName)); newCircleName = ""; showCreate = false } }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("创建", fontSize = 15.sp) } }, dismissButton = { TextButton(onClick = { showCreate = false; newCircleName = "" }, colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)) { Text("取消", fontSize = 15.sp) } })
     selectedCircle?.let { circle -> AlertDialog(onDismissRequest = { selectedCircle = null }, containerColor = Surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.padding(horizontal = 32.dp), title = { Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Text(circle.name, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp) } }, text = { Column { Text("成员 (${circle.members.size})", color = TextSecondary, fontSize = 13.sp); Spacer(modifier = Modifier.height(8.dp)); circle.members.forEach { m -> Text("◇ $m", color = TextPrimary, fontSize = 15.sp, modifier = Modifier.padding(vertical = 4.dp)) } } }, confirmButton = { TextButton(onClick = { selectedCircle = null }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("关闭", fontSize = 15.sp) } }) }
 }
@@ -507,21 +513,21 @@ data class CircleData(val name: String, val members: MutableList<String>)
 // ============================================
 @Composable
 fun ProfileTab(
-    onLogout: () -> Unit, onMyPostsClick: () -> Unit = {}, onPublishClick: () -> Unit = {},
+    onLogout: () -> Unit, onMyPostsClick: () -> Unit = {},
+    onMyFavoritesClick: () -> Unit = {},
     onEditProfileClick: () -> Unit = {}, onAdminClick: () -> Unit = {},
-    onNotificationsClick: () -> Unit = {}, modifier: Modifier = Modifier
+    onNotificationsClick: () -> Unit = {}, onAboutClick: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     val nickname = TokenManager.getNickname() ?: TokenManager.getUsername() ?: "GoodX"
     var isAdmin by remember { mutableStateOf(false) }
     var unreadCount by remember { mutableStateOf(0) }
     var showLogoutConfirm by remember { mutableStateOf(false) }
-    var showAbout by remember { mutableStateOf(false) }
-    var updateInfo by remember { mutableStateOf<Triple<String, String, String>?>(null) }
-    var downloadProgress by remember { mutableStateOf(-1) }
     val context = LocalContext.current
     LaunchedEffect(Unit) { try { val r = RetrofitClient.apiService.checkAdmin(); if (r.isSuccessful) isAdmin = r.body()?.isAdmin ?: false; val u = RetrofitClient.apiService.getUnreadCount(); if (u.isSuccessful) unreadCount = u.body()?.count ?: 0 } catch (_: Exception) {} }
 
-    Column(modifier = modifier.fillMaxSize().background(Background).padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    LiquidGlassBackdrop(modifier = modifier.fillMaxSize(), baseColor = Background, accentColor = Accent) {
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(modifier = Modifier.height(60.dp))
         val avatarUrl = TokenManager.getAvatar()
         Box(modifier = Modifier.size(80.dp).clip(RoundedCornerShape(24.dp)).background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.15f)).clickable { onEditProfileClick() }, contentAlignment = Alignment.Center) {
@@ -533,9 +539,9 @@ fun ProfileTab(
         Text("@${TokenManager.getUsername() ?: ""}", color = TextSecondary, fontSize = 14.sp, modifier = Modifier.padding(top = 2.dp))
         TextButton(onClick = onEditProfileClick, colors = ButtonDefaults.textButtonColors(contentColor = Accent), modifier = Modifier.padding(bottom = 24.dp)) { Text("编辑资料", fontSize = 13.sp) }
 
-        Button(onClick = onPublishClick, colors = ButtonDefaults.buttonColors(containerColor = Accent), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("发布好物", fontSize = 16.sp, fontWeight = FontWeight.SemiBold) }
-        Spacer(modifier = Modifier.height(12.dp))
         OutlinedButton(onClick = onMyPostsClick, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border)), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("我的发布", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(onClick = onMyFavoritesClick, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border)), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("我的收藏", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedButton(onClick = onNotificationsClick, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border)), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text(if (unreadCount > 0) " 消息中心 ($unreadCount)" else "消息中心", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
         Spacer(modifier = Modifier.height(12.dp))
@@ -545,25 +551,14 @@ fun ProfileTab(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        OutlinedButton(onClick = {
-            UpdateManager.checkForUpdate(context) { v, n, u -> updateInfo = Triple(v, n, u) }
-        }, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border.copy(alpha = 0.5f))), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("检查更新", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedButton(onClick = { showAbout = true }, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border.copy(alpha = 0.5f))), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("关于GoodX", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
+        OutlinedButton(onClick = onAboutClick, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border.copy(alpha = 0.5f))), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("关于GoodX", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
         Spacer(modifier = Modifier.height(12.dp))
 
         OutlinedButton(onClick = { showLogoutConfirm = true }, colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary), shape = RoundedCornerShape(12.dp), border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(Border.copy(alpha = 0.5f))), modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("退出登录", fontSize = 16.sp, fontWeight = FontWeight.Medium) }
     }
+    }
 
     if (showLogoutConfirm) AlertDialog(onDismissRequest = { showLogoutConfirm = false }, containerColor = Surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.padding(horizontal = 48.dp), title = { Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Text("退出登录", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp) } }, text = { Spacer(modifier = Modifier.height(8.dp)); Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { TextButton(onClick = { showLogoutConfirm = false }, colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)) { Text("取消", fontSize = 15.sp) }; TextButton(onClick = { showLogoutConfirm = false; onLogout() }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("确认", fontSize = 15.sp) } } }, confirmButton = {}, dismissButton = {})
-
-    if (showAbout) AlertDialog(onDismissRequest = { showAbout = false }, containerColor = Surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.padding(horizontal = 32.dp), text = { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("GoodX", color = Accent, fontSize = 24.sp, fontWeight = FontWeight.Bold); Spacer(modifier = Modifier.height(8.dp)); Text("v0.6.0", color = TextSecondary, fontSize = 14.sp); Spacer(modifier = Modifier.height(4.dp)); Text("分享值得被看见的东西", color = TextSecondary.copy(alpha = 0.7f), fontSize = 13.sp); Spacer(modifier = Modifier.height(16.dp)); Text("© 2026 GoodX", color = TextSecondary.copy(alpha = 0.5f), fontSize = 12.sp) } }, confirmButton = { TextButton(onClick = { showAbout = false }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("知道了", fontSize = 15.sp) } })
-
-    updateInfo?.let { (version, note, url) ->
-        val isDownloading = downloadProgress >= 0
-        AlertDialog(onDismissRequest = { if (!isDownloading) { updateInfo = null; downloadProgress = -1 } }, containerColor = Surface, shape = RoundedCornerShape(20.dp), modifier = Modifier.padding(horizontal = 32.dp), title = { Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Text(if (isDownloading) "正在下载..." else "发现新版本 $version", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp) } }, text = { if (isDownloading) Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("$downloadProgress%", color = Accent, fontSize = 18.sp, fontWeight = FontWeight.SemiBold); Spacer(modifier = Modifier.height(8.dp)); LinearProgressIndicator(progress = { downloadProgress / 100f }, color = Accent, modifier = Modifier.fillMaxWidth()); Spacer(modifier = Modifier.height(8.dp)); Text(url, color = TextSecondary.copy(alpha = 0.4f), fontSize = 9.sp, maxLines = 1) } else Text(note, color = TextSecondary, fontSize = 14.sp) }, confirmButton = { if (!isDownloading) TextButton(onClick = { downloadProgress = 0; UpdateManager.downloadAndInstall(context, url) { pct -> downloadProgress = pct } }, colors = ButtonDefaults.textButtonColors(contentColor = Accent)) { Text("立即更新", fontSize = 15.sp) } }, dismissButton = { TextButton(onClick = { updateInfo = null; downloadProgress = -1 }, colors = ButtonDefaults.textButtonColors(contentColor = TextSecondary)) { Text(if (isDownloading) "后台下载" else "稍后", fontSize = 15.sp) } })
-    }
 }
 
 // ========== 发布好物对话框 ==========

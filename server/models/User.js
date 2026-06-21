@@ -39,6 +39,10 @@ const userSchema = new mongoose.Schema({
   circles: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Circle'
+  }],
+  favorites: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'GoodItem'
   }]
 }, {
   timestamps: true

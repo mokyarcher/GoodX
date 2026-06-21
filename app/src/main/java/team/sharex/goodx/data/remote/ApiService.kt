@@ -77,8 +77,15 @@ interface ApiService {
         @Query("page") page: Int = 1,
         @Query("limit") limit: Int = 20,
         @Query("author") author: String? = null,
-        @Query("status") status: String? = null
+        @Query("status") status: String? = null,
+        @Query("favorites") favorites: Boolean? = null
     ): Response<List<GoodItem>>
+
+    @POST("api/good-items/{id}/favorite")
+    suspend fun favoriteGoodItem(@Path("id") id: String): Response<GoodItem>
+
+    @DELETE("api/good-items/{id}/favorite")
+    suspend fun unfavoriteGoodItem(@Path("id") id: String): Response<GoodItem>
 
     @GET("api/good-items/{id}")
     suspend fun getGoodItemDetail(@Path("id") id: String): Response<GoodItem>

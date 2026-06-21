@@ -25,6 +25,7 @@ import team.sharex.goodx.ui.screens.CategoryDetailScreen
 import team.sharex.goodx.ui.screens.ContentTypePostsScreen
 import team.sharex.goodx.data.remote.AdminPost
 import team.sharex.goodx.data.remote.AdminUser
+import team.sharex.goodx.ui.screens.AboutScreen
 import team.sharex.goodx.ui.screens.AdminAllPostsScreen
 import team.sharex.goodx.ui.screens.AdminPostDetailScreen
 import team.sharex.goodx.ui.screens.AdminScreen
@@ -37,6 +38,7 @@ import team.sharex.goodx.ui.screens.HomeScreen
 import team.sharex.goodx.ui.screens.HomeTab
 import team.sharex.goodx.ui.screens.LoginScreen
 import team.sharex.goodx.ui.screens.SplashScreen
+import team.sharex.goodx.ui.screens.MyFavoritesScreen
 import team.sharex.goodx.ui.screens.MyPostsScreen
 import team.sharex.goodx.ui.screens.NotificationsScreen
 import team.sharex.goodx.ui.screens.RegisterScreen
@@ -87,6 +89,8 @@ sealed class Screen {
     data class AdminUserPosts(val user: AdminUser) : Screen()
     data class AdminPostDetail(val post: AdminPost, val user: AdminUser) : Screen()
     object CreateGoodItem : Screen()
+    object About : Screen()
+    object MyFavorites : Screen()
 }
 
 @Composable
@@ -112,6 +116,8 @@ fun AppNavigation() {
                         is Screen.EditGoodItem -> homeTab = HomeTab.PROFILE
                         is Screen.Notifications -> homeTab = HomeTab.PROFILE
                         is Screen.MyPosts -> homeTab = HomeTab.PROFILE
+                        is Screen.About -> homeTab = HomeTab.PROFILE
+                        is Screen.MyFavorites -> homeTab = HomeTab.PROFILE
                         else -> {}
                     }
                     currentScreen = previous
@@ -160,9 +166,11 @@ fun AppNavigation() {
                 onGoodItemClick = { itemId -> navigateTo(Screen.GoodItemDetail(itemId)) },
                 onMyPostsClick = { navigateTo(Screen.MyPosts()) },
                 onNotificationsClick = { navigateTo(Screen.Notifications) },
-                onPublishClick = { navigateTo(Screen.CreateGoodItem) },
                 onEditProfileClick = { navigateTo(Screen.EditProfile) },
-                onAdminClick = { navigateTo(Screen.Admin) }
+                onAdminClick = { navigateTo(Screen.Admin) },
+                onAboutClick = { navigateTo(Screen.About) },
+                onMyFavoritesClick = { navigateTo(Screen.MyFavorites) },
+                onPublishClick = { navigateTo(Screen.CreateGoodItem) }
             )
         }
 
@@ -183,6 +191,7 @@ fun AppNavigation() {
                 initialState is Screen.Admin && targetState is Screen.AdminUserPosts -> true
                 initialState is Screen.AdminUserPosts && targetState is Screen.AdminPostDetail -> true
                 initialState is Screen.Home && targetState is Screen.CreateGoodItem -> true
+                initialState is Screen.Home && targetState is Screen.About -> true
                 initialState is Screen.CategoryDetail && targetState is Screen.GoodItemDetail -> true
                 initialState is Screen.Login && targetState is Screen.Home -> true
                 initialState is Screen.Register && targetState is Screen.Home -> true
@@ -396,6 +405,23 @@ fun AppNavigation() {
                     navStack = emptyList()
                     currentScreen = Screen.Home
                 }
+            )
+            is Screen.About -> AboutScreen(
+                onBack = {
+                    if (navStack.isNotEmpty()) {
+                        currentScreen = navStack.last()
+                        navStack = navStack.dropLast(1)
+                    }
+                }
+            )
+            is Screen.MyFavorites -> MyFavoritesScreen(
+                onBack = {
+                    if (navStack.isNotEmpty()) {
+                        currentScreen = navStack.last()
+                        navStack = navStack.dropLast(1)
+                    }
+                },
+                onGoodItemClick = { itemId -> navigateTo(Screen.GoodItemDetail(itemId)) }
             )
         }
     }

@@ -321,6 +321,28 @@ fun GoodItemDetailScreen(
                                     // ignore
                                 }
                             }
+                        },
+                        onFavoriteToggle = {
+                            scope.launch {
+                                try {
+                                    val wasFavorited = goodItem.isFavorited
+                                    val response = if (wasFavorited) {
+                                        RetrofitClient.apiService.unfavoriteGoodItem(goodItem.id)
+                                    } else {
+                                        RetrofitClient.apiService.favoriteGoodItem(goodItem.id)
+                                    }
+                                    if (response.isSuccessful) {
+                                        item = response.body()
+                                        Toast.makeText(
+                                            context,
+                                            if (wasFavorited) "已取消收藏" else "收藏成功",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "操作失败", Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         }
                     )
                 }
@@ -366,7 +388,7 @@ fun GoodItemDetailScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.10f))
+                        .background(Color.Black.copy(alpha = 0.40f))
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null
@@ -896,9 +918,11 @@ private fun ImageNavButton(
 @Composable
 fun LikeSection(
     item: GoodItem,
-    onLikeToggle: () -> Unit
+    onLikeToggle: () -> Unit,
+    onFavoriteToggle: () -> Unit
 ) {
     val isLiked = !item.likedBy.isNullOrEmpty()
+    val isFavorited = item.isFavorited
     val context = LocalContext.current
 
     Row(
@@ -915,10 +939,10 @@ fun LikeSection(
             onClick = onLikeToggle
         )
         InteractionButton(
-            icon = Icons.Outlined.BookmarkBorder,
-            label = "收藏",
-            tint = TextSecondary.copy(alpha = 0.7f),
-            onClick = { Toast.makeText(context, "收藏功能开发中", Toast.LENGTH_SHORT).show() }
+            icon = if (isFavorited) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+            label = if (isFavorited) "已收藏" else "收藏",
+            tint = if (isFavorited) LikeRed else TextSecondary.copy(alpha = 0.7f),
+            onClick = onFavoriteToggle
         )
         InteractionButton(
             icon = Icons.Outlined.Share,

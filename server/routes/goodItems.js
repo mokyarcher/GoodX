@@ -1,6 +1,7 @@
 const express = require('express');
 const { auth, checkBanned } = require('../middleware/auth');
 const GoodItem = require('../models/GoodItem');
+const User = require('../models/User');
 
 const router = express.Router();
 
@@ -31,9 +32,9 @@ router.post('/', auth, checkBanned, async (req, res) => {
 });
 
 // 获取好物列表（支持按品类筛选）
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
-    const { contentType, category, sort = 'newest', page = 1, limit = 20, author, status } = req.query;
+    const { contentType, category, sort = 'newest', page = 1, limit = 20, author, status, favorites } = req.query;
 
     const query = {};
     // 默认只返回 active 的帖子，管理员可通过 status=all 查看全部
@@ -54,6 +55,17 @@ router.get('/', async (req, res) => {
       query.author = author;
     }
 
+    // 收藏查询：需要登录，返回当前用户收藏的帖子
+    if (favorites === 'true') {
+      const user = await User.findById(req.userId);
+      const favoriteIds = (user && user.favorites) ? user.favorites.map(id => id.toString()) : [];
+      if (favoriteIds.length === 0) {
+        // 没有收藏，直接返回空数组
+        return res.json([]);
+      }
+      query._id = { $in: favoriteIds };
+    }
+
     let sortOption = {};
     if (sort === 'newest') {
       sortOption = { createdAt: -1 };
@@ -69,14 +81,23 @@ router.get('/', async (req, res) => {
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
 
-    res.json(goodItems.map(formatGoodItem));
+    // 如果查询收藏，需要给每个 item 附加 favoritedBy 信息
+    if (favorites === 'true') {
+      const user = await User.findById(req.userId);
+      const favSet = new Set((user.favorites || []).map(id => id.toString()));
+      goodItems.forEach(item => {
+        item.favoritedBy = Array.from(favSet);
+      });
+    }
+
+    res.json(goodItems.map(item => formatGoodItem(item, req.userId)));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
 // 获取好物详情
-router.get('/:id', async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
   try {
     const goodItem = await GoodItem.findById(req.params.id)
       .populate('author', 'username nickname avatar')
@@ -86,7 +107,50 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ message: '好物不存在' });
     }
 
-    res.json(formatGoodItem(goodItem));
+    res.json(formatGoodItem(goodItem, req.userId));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 收藏好物
+router.post('/:id/favorite', auth, async (req, res) => {
+  try {
+    const goodItem = await GoodItem.findById(req.params.id);
+    if (!goodItem) {
+      return res.status(404).json({ message: '好物不存在' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user.favorites) user.favorites = [];
+    
+    const alreadyFavorited = user.favorites.some(id => id.toString() === req.params.id);
+    if (!alreadyFavorited) {
+      user.favorites.push(req.params.id);
+      await user.save();
+    }
+
+    res.json(formatGoodItem(goodItem, req.userId));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// 取消收藏
+router.delete('/:id/favorite', auth, async (req, res) => {
+  try {
+    const goodItem = await GoodItem.findById(req.params.id);
+    if (!goodItem) {
+      return res.status(404).json({ message: '好物不存在' });
+    }
+
+    const user = await User.findById(req.userId);
+    if (user.favorites) {
+      user.favorites = user.favorites.filter(id => id.toString() !== req.params.id);
+      await user.save();
+    }
+
+    res.json(formatGoodItem(goodItem, req.userId));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -356,8 +420,8 @@ router.put('/:id/submit-review', auth, checkBanned, async (req, res) => {
 });
 
 // 格式化好物数据
-function formatGoodItem(item) {
-  return {
+async function formatGoodItem(item, currentUserId = null) {
+  const result = {
     id: item._id.toString(),
     title: item.title,
     description: item.description,
@@ -381,6 +445,16 @@ function formatGoodItem(item) {
     commentsCount: item.comments.length,
     createdAt: item.createdAt?.getTime() || Date.now()
   };
+
+  // 如果传入了当前用户ID，检查是否已收藏
+  if (currentUserId) {
+    const user = await User.findById(currentUserId);
+    if (user && user.favorites) {
+      result.isFavorited = user.favorites.some(id => id.toString() === item._id.toString());
+    }
+  }
+
+  return result;
 }
 
 function buildCommentTree(comments) {

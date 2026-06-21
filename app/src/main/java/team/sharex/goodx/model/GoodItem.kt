@@ -12,6 +12,7 @@ data class GoodItem(
     val author: Author? = null,
     val likes: Int = 0,
     val likedBy: List<String>? = emptyList(),
+    val isFavorited: Boolean = false,
     val latestInteraction: LatestInteraction? = null,
     val comments: List<Comment>? = emptyList(),
     val commentsCount: Int = 0,

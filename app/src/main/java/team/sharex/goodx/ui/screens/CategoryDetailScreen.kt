@@ -29,6 +29,7 @@ import team.sharex.goodx.model.displayName
 import team.sharex.goodx.model.iconEmoji
 import team.sharex.goodx.model.subtitle
 import team.sharex.goodx.ui.components.LiquidGlassCard
+import team.sharex.goodx.ui.components.LiquidGlassBackdrop
 import team.sharex.goodx.ui.theme.Accent
 import team.sharex.goodx.ui.theme.Background
 import team.sharex.goodx.ui.theme.Surface
