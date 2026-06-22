@@ -2,6 +2,7 @@ const express = require('express');
 const { auth, checkBanned } = require('../middleware/auth');
 const GoodItem = require('../models/GoodItem');
 const User = require('../models/User');
+const { moderateImages } = require('../utils/imageModeration');
 
 const router = express.Router();
 
@@ -19,6 +20,21 @@ router.post('/', auth, checkBanned, async (req, res) => {
   try {
     const { title, description, contentType, category, subCategory, images, link } = req.body;
     const normalizedCategory = category.toLowerCase();
+
+    // 图片内容审核
+    if (images && images.length > 0) {
+      const moderationResult = await moderateImages(images);
+      if (!moderationResult.passed) {
+        const failed = moderationResult.results.find(r => !r.passed);
+        return res.status(400).json({ 
+          message: '图片包含违规内容，禁止发布',
+          detail: {
+            riskLevel: failed.riskLevel,
+            labels: failed.labels
+          }
+        });
+      }
+    }
 
     const goodItem = new GoodItem({
       title,
