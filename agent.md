@@ -64,6 +64,8 @@ server/models/
 
 服务端线上目录：`/opt/goodx`；PM2 进程：`goodx-api`。
 
+**违禁词库部署路径**：`scp` 到 `/opt/goodx/config/sensitive-words.json`，不是 `/opt/goodx/server/config/`（本地和服务端目录结构不同）。
+
 部署前优先备份关键文件。部署后检查 `/health` 和 `pm2 status goodx-api`。
 
 ### 5. 每次改动后必须 Git Commit
