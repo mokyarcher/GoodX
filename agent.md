@@ -1,4 +1,15 @@
-# GoodX Agent 准则
+**服务端文件路径映射**（本地 → 服务器）：
+
+| 本地文件 | 服务器路径 |
+|---------|-----------|
+| `server/routes/*.js` | `/opt/goodx/routes/*.js` |
+| `server/utils/*.js` | `/opt/goodx/utils/*.js` |
+| `server/config/*.json` | `/opt/goodx/config/*.json` |
+| `server/models/*.js` | `/opt/goodx/models/*.js` |
+| `server/middleware/*.js` | `/opt/goodx/middleware/*.js` |
+| `server/app.js` | `/opt/goodx/app.js` |
+
+注意：服务器上 `routes/utils/config` 等目录直接在 `/opt/goodx/` 下，没有 `server/` 这一层。# GoodX Agent 准则
 
 本文件记录 AI / 开发助手参与 GoodX 开发时必须遵守的准则。后续可随项目推进持续更新。
 

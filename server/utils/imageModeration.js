@@ -1,11 +1,12 @@
-const { default: Green2022Client } = require('@alicloud/green20220302');
+const Green = require('@alicloud/green20220302');
 const { Config } = require('@alicloud/openapi-client');
+const { RuntimeOptions } = require('@alicloud/tea-util');
 
 // 从环境变量读取阿里云配置
 const accessKeyId = process.env.ALIYUN_ACCESS_KEY_ID;
 const accessKeySecret = process.env.ALIYUN_ACCESS_KEY_SECRET;
 
-// 初始化客户端（延迟初始化，避免启动时 AK/SK 未配置就报错）
+// 初始化客户端（延迟初始化）
 let client = null;
 
 function getClient() {
@@ -19,7 +20,7 @@ function getClient() {
       accessKeySecret,
       endpoint: 'green-cip.cn-shanghai.aliyuncs.com'
     });
-    client = new Green2022Client(config);
+    client = new Green.default(config);
   }
   return client;
 }
@@ -32,30 +33,48 @@ function getClient() {
 async function moderateImage(imageUrl) {
   const greenClient = getClient();
   if (!greenClient) {
-    // 未配置 AK/SK，默认放行
     return { passed: true, riskLevel: 'none', labels: [] };
   }
 
   try {
-    const response = await greenClient.imageModeration({
-      service: 'image_moderation', // 图片审核增强版
-      serviceParameters: JSON.stringify({ url: imageUrl })
+    const request = new Green.ImageAsyncModerationRequest({
+      service: 'baselineCheck',
+      serviceParameters: JSON.stringify({
+        imageUrl: imageUrl,
+        dataId: 'goodx-' + Date.now()
+      })
     });
 
-    const result = JSON.parse(response.body.data);
-    const riskLevel = result.riskLevel || 'none'; // none / low / medium / high
-    const labels = result.result || [];
+    const runtime = new RuntimeOptions({});
+    const response = await greenClient.imageAsyncModerationWithOptions(request, runtime);
+
+    const body = response.body;
+    if (body.code !== 200) {
+      console.error('[图片审核] 接口返回错误:', body.msg);
+      return { passed: true, riskLevel: 'error', labels: [] };
+    }
+
+    const data = body.data || {};
+    const result = data.result || [];
+    
+    // 解析风险等级
+    let riskLevel = 'none';
+    const labels = [];
+    
+    for (const item of result) {
+      if (item.confidence && item.confidence > 60) {
+        riskLevel = 'high';
+      } else if (item.confidence && item.confidence > 30) {
+        riskLevel = 'medium';
+      }
+      labels.push(item.label);
+    }
 
     // high = 高风险，直接拦截
     // medium = 中风险，可以拦截或标记审核
-    // low / none = 放行
     const passed = riskLevel !== 'high' && riskLevel !== 'medium';
 
-    return {
-      passed,
-      riskLevel,
-      labels: labels.map(l => l.label)
-    };
+    return { passed, riskLevel, labels };
   } catch (error) {
     console.error('[图片审核] 调用失败:', error.message);
     // 审核服务异常时，默认放行（避免影响正常发帖）
