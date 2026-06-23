@@ -1,10 +1,32 @@
+const fs = require('fs');
+const path = require('path');
+
+// 直接读取 .env 文件（不依赖 dotenv/process.env，避免 pm2 环境变量问题）
+function loadEnv() {
+  try {
+    const envPath = path.join(__dirname, '..', '.env');
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    const env = {};
+    envContent.split('\n').forEach(line => {
+      const match = line.match(/^([^#=]+)=(.*)$/);
+      if (match) {
+        env[match[1].trim()] = match[2].trim();
+      }
+    });
+    return env;
+  } catch (e) {
+    console.warn('[图片审核] 读取 .env 文件失败:', e.message);
+    return {};
+  }
+}
+
+const env = loadEnv();
+const accessKeyId = env.ALIYUN_ACCESS_KEY_ID;
+const accessKeySecret = env.ALIYUN_ACCESS_KEY_SECRET;
+
 const Green = require('@alicloud/green20220302');
 const { Config } = require('@alicloud/openapi-client');
 const { RuntimeOptions } = require('@alicloud/tea-util');
-
-// 从环境变量读取阿里云配置
-const accessKeyId = process.env.ALIYUN_ACCESS_KEY_ID;
-const accessKeySecret = process.env.ALIYUN_ACCESS_KEY_SECRET;
 
 // 初始化客户端（延迟初始化）
 let client = null;
@@ -26,8 +48,8 @@ function getClient() {
 }
 
 /**
- * 审核图片
- * @param {string} imageUrl - 图片 URL
+ * 审核图片（同步接口）
+ * @param {string} imageUrl - 图片 URL（支持相对路径 /uploads/xxx）
  * @returns {Promise<{passed: boolean, riskLevel: string, labels: string[]}>}
  */
 async function moderateImage(imageUrl) {
@@ -36,17 +58,23 @@ async function moderateImage(imageUrl) {
     return { passed: true, riskLevel: 'none', labels: [] };
   }
 
+  // 将相对路径拼接为完整 URL（阿里云需要公网可访问的 URL）
+  let fullUrl = imageUrl;
+  if (imageUrl.startsWith('/uploads/')) {
+    fullUrl = `http://111.229.166.216:3002${imageUrl}`;
+  }
+
   try {
-    const request = new Green.ImageAsyncModerationRequest({
+    const request = new Green.ImageModerationRequest({
       service: 'baselineCheck',
       serviceParameters: JSON.stringify({
-        imageUrl: imageUrl,
+        imageUrl: fullUrl,
         dataId: 'goodx-' + Date.now()
       })
     });
 
     const runtime = new RuntimeOptions({});
-    const response = await greenClient.imageAsyncModerationWithOptions(request, runtime);
+    const response = await greenClient.imageModerationWithOptions(request, runtime);
 
     const body = response.body;
     if (body.code !== 200) {
