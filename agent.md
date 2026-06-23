@@ -9,7 +9,22 @@
 | `server/middleware/*.js` | `/opt/goodx/middleware/*.js` |
 | `server/app.js` | `/opt/goodx/app.js` |
 
-注意：服务器上 `routes/utils/config` 等目录直接在 `/opt/goodx/` 下，没有 `server/` 这一层。# GoodX Agent 准则
+注意：服务器上 `routes/utils/config` 等目录直接在 `/opt/goodx/` 下，没有 `server/` 这一层。
+
+**pm2 环境变量问题**：
+- pm2 启动的 Node.js 进程不会继承 shell 的 `process.env`
+- `dotenv` 在 pm2 下可能加载失败，解决方案：在 `utils/imageModeration.js` 中直接 `fs.readFileSync` 读取 `.env` 文件解析
+- pm2 启动命令：`pm2 start /opt/goodx/app.js --name goodx-api --cwd /opt/goodx`
+
+**阿里云图片审核**：
+- 接入产品：阿里云内容安全（绿网）图片审核增强版
+- 服务代码：`baselineCheck`
+- 参数名：`imageUrl`（不是 `url`）
+- 图片必须是公网可访问的完整 URL，App 上传的相对路径 `/uploads/xxx.jpg` 需拼接为 `http://111.229.166.216:3002/uploads/xxx.jpg`
+- SDK：`@alicloud/green20220302`，请求对象 `Green.ImageModerationRequest`，调用方法 `imageModerationWithOptions`
+- 控制台查看结果：内容安全 → 机器审核增强版 → 图片审核 → 结果查询
+
+# GoodX Agent 准则
 
 本文件记录 AI / 开发助手参与 GoodX 开发时必须遵守的准则。后续可随项目推进持续更新。
 

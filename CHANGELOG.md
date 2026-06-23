@@ -4,6 +4,44 @@
 
 ---
 
+## 2026-06-22：接入阿里云图片内容审核
+
+### 内容
+
+- 发帖时自动审核图片，调用阿里云内容安全（绿网）图片审核增强版
+- 高风险/中风险图片拦截，返回"图片包含违规内容，禁止发布"
+- 审核服务异常时默认放行，避免影响正常发帖
+
+### 方法
+
+- 服务端新增 `server/utils/imageModeration.js`，封装阿里云 SDK 调用
+- 使用 `Green.ImageModerationRequest` + `imageModerationWithOptions` 同步接口
+- 服务代码 `baselineCheck`，参数 `imageUrl`（公网可访问完整 URL）
+- App 上传返回相对路径 `/uploads/xxx.jpg`，审核前自动拼接为 `http://111.229.166.216:3002/uploads/xxx.jpg`
+
+### 踩坑
+
+- pm2 下 `process.env` 不继承 shell 环境变量，`dotenv` 也可能失效
+- 最终方案：在 `imageModeration.js` 里直接用 `fs.readFileSync` 读取 `.env` 文件解析 AK/SK
+- SDK 版本 `@alicloud/green20220302@3.3.0`，请求对象从 `Green` 模块直接导出，不是 `Green.default`
+
+---
+
+## 2026-06-22：违禁词库清理与部署
+
+### 内容
+
+- 从电商/广告法词库导入的违禁词库中，清理掉 38 个过度宽泛的极限词（如单字"最"）
+- 词库从 3490 条缩减到 2753 条，避免正常评论（如"最大"、"最好"）被误拦截
+- 词库文件独立为 `server/config/sensitive-words.json`，服务端启动时加载
+
+### 说明
+
+- 部署路径：`/opt/goodx/config/sensitive-words.json`（不是 `server/config/`）
+- 词库管理流程：用户编辑 JSON → 通知助手 → scp 上传 → `pm2 restart goodx-api`
+
+---
+
 ## 2026-06-19：发布 v0.7.7（versionCode 61）
 
 ### 内容
